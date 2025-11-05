@@ -1,30 +1,52 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+// src/App.tsx
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+
 import Abertura from "./pages/Abertura";
-import Dashboard from "./pages/Dashboard";
 import Registrar from "./pages/Registrar";
 import Config from "./pages/Config";
-import { useAlertsListener } from "@/hooks/useAlertsListener";
+import UrgeDashboardMVP from "./UrgeDashboardMVP";
+
+import Sidebar from "./components/Sidebar";
+import Header from "./components/Layout/Header";
+import Footer from "./components/Footer";
 
 export default function App() {
-  // 🔥 ativa o monitoramento de alertas em todas as páginas
-  useAlertsListener();
+  const location = useLocation();
+
+  const isAbertura = location.pathname === "/";
 
   return (
-    <Routes>
-      {/* 🟦 Tela inicial com mensagens motivacionais */}
-      <Route path="/" element={<Abertura />} />
+    <div className="flex min-h-screen bg-gray-50">
+      {/* ✅ Esconde Sidebar na abertura */}
+      {!isAbertura && <Sidebar />}
 
-      {/* 🟩 Dashboard principal */}
-      <Route path="/dashboard" element={<Dashboard />} />
+      <div className="flex-1 flex flex-col">
+        {/* ✅ Esconde header na abertura */}
+        {!isAbertura && <Header />}
 
-      {/* 🟨 Página de registro */}
-      <Route path="/registrar" element={<Registrar />} />
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+          <Routes>
+            {/* ✅ Tela inicial com mensagem inspiradora */}
+            <Route path="/" element={<Abertura />} />
 
-      {/* ⚙️ Página de configurações */}
-      <Route path="/config" element={<Config />} />
+            {/* ✅ Dashboard principal */}
+            <Route path="/dashboard" element={<UrgeDashboardMVP />} />
 
-      {/* 🚪 Fallback de segurança */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+            {/* ✅ Registros de Fissuras */}
+            <Route path="/registros" element={<Registrar />} />
+
+            {/* ✅ Config / Plano */}
+            <Route path="/plano" element={<Config />} />
+            <Route path="/config" element={<Config />} />
+
+            {/* ✅ fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+
+        {/* ✅ Rodapé visível apenas fora da abertura */}
+        {!isAbertura && <Footer />}
+      </div>
+    </div>
   );
 }

@@ -4,13 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
+import Footer from "@/components/Footer";   // ✅ Importação adicionada
 
 export default function Abertura() {
   const navigate = useNavigate();
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mensagens padrão (fallback)
+  // ✅ Mensagens padrão (fallback)
   const mensagensPadrao = [
     "Viva um dia de cada vez.",
     "O importante é continuar tentando.",
@@ -25,7 +26,7 @@ export default function Abertura() {
     async function carregarMensagem() {
       try {
         const { data, error } = await supabase
-          .from("motivational_messages") // ⚙️ Use aqui o nome correto da tabela no seu Supabase
+          .from("motivational_messages")
           .select("message");
 
         if (error) throw error;
@@ -34,7 +35,6 @@ export default function Abertura() {
         const aleatoria = todas[Math.floor(Math.random() * todas.length)];
         setMensagem(aleatoria);
       } catch {
-        // fallback em caso de erro (como 400)
         const aleatoria =
           mensagensPadrao[Math.floor(Math.random() * mensagensPadrao.length)];
         setMensagem(aleatoria);
@@ -45,7 +45,7 @@ export default function Abertura() {
 
     carregarMensagem();
 
-    // Redirecionar após 10 s
+    // ✅ Redirecionar após 10 s
     const timer = setTimeout(() => {
       navigate("/dashboard");
     }, 10000);
@@ -54,7 +54,7 @@ export default function Abertura() {
   }, [navigate]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-blue-50 to-blue-100 text-center p-6">
+    <div className="flex flex-col items-center justify-between h-screen bg-gradient-to-b from-blue-50 to-blue-100 text-center p-6">
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.p
@@ -73,10 +73,11 @@ export default function Abertura() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 1 }}
-            className="max-w-lg"
+            className="max-w-lg flex-1 flex flex-col justify-center"
           >
             <h1 className="text-2xl font-semibold mb-4">Mensagem do Dia</h1>
             <p className="text-gray-800 text-lg italic mb-8">{mensagem}</p>
+
             <Button
               onClick={() => navigate("/dashboard")}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow"
@@ -86,6 +87,9 @@ export default function Abertura() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ✅ Footer agora aparece também na abertura */}
+      <Footer />
     </div>
   );
 }
