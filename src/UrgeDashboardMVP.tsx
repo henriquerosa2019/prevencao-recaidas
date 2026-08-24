@@ -9,6 +9,8 @@ import {
   ResponsiveContainer,
   Cell,
   LabelList,
+  PieChart,
+  Pie,
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -419,24 +421,33 @@ export default function UrgeDashboardMVP() {
     );
   }
 
-  // 🕐 Tick do eixo X "Por Horário": mantém a hora (0h, 2h, 4h...) e acrescenta os
-  // nomes dos gatilhos daquela hora, no rodapé, em ângulo — igual ao gráfico "Gatilhos".
-  function HoraFooterTick(props: any) {
-    const { x, y, payload } = props;
-    const item = porHorario.find((h) => h.hora === payload.value);
-    const nomes = item?.gatilhos || [];
+  // 🥧 Rótulo de cada fatia do gráfico de pizza "Por Horário": mostra a hora
+  // apenas quando há registros naquele horário.
+  function HoraPieLabel(props: any) {
+    const { hora, ocorrencias } = props;
+    return ocorrencias > 0 ? hora : "";
+  }
+
+  // 🥧 Tooltip customizado do gráfico de pizza "Por Horário": hora, total de
+  // registros e o nome de cada gatilho daquele horário, na cor categórica dele.
+  function HoraPieTooltip({ active, payload }: any) {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0].payload;
     return (
-      <g transform={`translate(${x},${y}) rotate(-20)`}>
-        <text textAnchor="end" fontSize={11} fill="#374151" dy={4}>
-          <tspan fontWeight={700}>{payload.value}</tspan>
-          {nomes.map((n) => (
-            <tspan key={n} fill={corGatilho(n)}>
-              {" · "}
-              {n}
-            </tspan>
-          ))}
-        </text>
-      </g>
+      <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs max-w-[220px]">
+        <div className="font-semibold text-gray-800 mb-1">
+          {item.hora} · {item.ocorrencias} registro{item.ocorrencias === 1 ? "" : "s"}
+        </div>
+        {item.gatilhos.length > 0 && (
+          <div className="space-y-0.5">
+            {item.gatilhos.map((g: string) => (
+              <div key={g} style={{ color: corGatilho(g) }}>
+                {g}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -738,22 +749,27 @@ export default function UrgeDashboardMVP() {
                 </div>
               </Card>
 
-              <Card title={`Por Horário (${periodo}) · ${data.length} registros`}>
+              <Card
+                title={`Por Horário (${periodo}) · ${data.length} registros`}
+                footer={
+                  <span className="text-xs text-gray-400">
+                    Passe o mouse sobre uma fatia para ver os gatilhos daquele horário
+                  </span>
+                }
+              >
                 <div className="h-80 md:h-[420px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={porHorario} margin={{ bottom: 5 }}>
-                      <XAxis
-                        dataKey="hora"
-                        tick={HoraFooterTick}
-                        interval={1}
-                        height={120}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 12, fill: "#374151" }}
-                        allowDecimals={false}
-                      />
-                      <RTooltip />
-                      <Bar dataKey="ocorrencias" radius={[4, 4, 0, 0]}>
+                    <PieChart>
+                      <Pie
+                        data={porHorario}
+                        dataKey="ocorrencias"
+                        nameKey="hora"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius="75%"
+                        label={HoraPieLabel}
+                        labelLine={{ stroke: "#9ca3af" }}
+                      >
                         {porHorario.map((entry, i) => (
                           <Cell
                             key={i}
@@ -766,9 +782,9 @@ export default function UrgeDashboardMVP() {
                             )}
                           />
                         ))}
-                        <LabelList dataKey="ocorrencias" content={BarCountBadge} />
-                      </Bar>
-                    </BarChart>
+                      </Pie>
+                      <RTooltip content={<HoraPieTooltip />} />
+                    </PieChart>
                   </ResponsiveContainer>
                 </div>
               </Card>
