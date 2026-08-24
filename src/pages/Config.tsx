@@ -9,8 +9,10 @@ export default function Config() {
   const [ativarAlertas, setAtivarAlertas] = useState(true);
   const [plano, setPlano] = useState("");
   const [dataInicio, setDataInicio] = useState("");
+  const [padrinhoWhatsapp, setPadrinhoWhatsapp] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
+  const [abrindoWhatsapp, setAbrindoWhatsapp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -20,7 +22,9 @@ export default function Config() {
       try {
         const { data, error } = await supabase
           .from("user_config")
-          .select("default_period, alerts_enabled, prevention_plan, sobriety_start_date")
+          .select(
+            "default_period, alerts_enabled, prevention_plan, sobriety_start_date, sponsor_whatsapp"
+          )
           .limit(1)
           .maybeSingle();
 
@@ -31,6 +35,7 @@ export default function Config() {
           setAtivarAlertas(data.alerts_enabled ?? true);
           setPlano(data.prevention_plan || "");
           setDataInicio(data.sobriety_start_date || "");
+          setPadrinhoWhatsapp(data.sponsor_whatsapp || "");
         }
       } catch (err) {
         console.warn("Nenhuma configuração encontrada ainda.");
@@ -38,6 +43,55 @@ export default function Config() {
     }
     carregarConfig();
   }, []);
+
+  // 📱 Normaliza número de WhatsApp brasileiro (aceita com ou sem DDI/símbolos)
+  function normalizarWhatsapp(numero: string) {
+    const apenasDigitos = numero.replace(/\D/g, "");
+    if (!apenasDigitos) return "";
+    if (apenasDigitos.startsWith("55") && apenasDigitos.length >= 12) {
+      return apenasDigitos;
+    }
+    return `55${apenasDigitos}`;
+  }
+
+  // 📱 Salva o número (se necessário) e abre o WhatsApp imediatamente
+  async function handleAdicionarPadrinho() {
+    const numeroLimpo = normalizarWhatsapp(padrinhoWhatsapp);
+    if (!numeroLimpo || numeroLimpo.length < 12) {
+      toast({
+        title: "Número inválido",
+        description: "Digite um número de WhatsApp válido com DDD (ex: 11 91234-5678).",
+        duration: 4000,
+      });
+      return;
+    }
+
+    setAbrindoWhatsapp(true);
+    try {
+      const { data: existente } = await supabase
+        .from("user_config")
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+
+      if (existente) {
+        await supabase
+          .from("user_config")
+          .update({ sponsor_whatsapp: numeroLimpo, updated_at: new Date().toISOString() })
+          .eq("id", existente.id);
+      } else {
+        await supabase
+          .from("user_config")
+          .insert([{ sponsor_whatsapp: numeroLimpo, created_at: new Date().toISOString() }]);
+      }
+    } catch (err) {
+      console.error("Erro ao salvar contato do padrinho/madrinha:", err);
+    } finally {
+      setAbrindoWhatsapp(false);
+    }
+
+    window.open(`https://wa.me/${numeroLimpo}`, "_blank");
+  }
 
   // 🔹 Salvar ou atualizar configuração
   async function handleSalvar() {
@@ -51,6 +105,8 @@ export default function Config() {
         .limit(1)
         .maybeSingle();
 
+      const numeroLimpo = padrinhoWhatsapp ? normalizarWhatsapp(padrinhoWhatsapp) : null;
+
       if (existente) {
         const { error } = await supabase
           .from("user_config")
@@ -59,6 +115,7 @@ export default function Config() {
             alerts_enabled: ativarAlertas,
             prevention_plan: plano.trim(),
             sobriety_start_date: dataInicio || null,
+            sponsor_whatsapp: numeroLimpo,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existente.id);
@@ -71,6 +128,7 @@ export default function Config() {
             alerts_enabled: ativarAlertas,
             prevention_plan: plano.trim(),
             sobriety_start_date: dataInicio || null,
+            sponsor_whatsapp: numeroLimpo,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -173,15 +231,36 @@ export default function Config() {
           </p>
         </section>
 
+        {/* 📱 Contato Padrinho/Madrinha */}
+        <section className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h2 className="text-lg font-bold mb-2">📱 Padrinho/Madrinha</h2>
+          <p className="text-sm text-gray-600 mb-3">
+            Salve o WhatsApp do seu padrinho ou madrinha para falar com ele(a) rapidamente em
+            momentos de fissura.
+          </p>
+          <label className="block text-sm font-medium mb-1">Número de WhatsApp</label>
+          <input
+            type="tel"
+            value={padrinhoWhatsapp}
+            onChange={(e) => setPadrinhoWhatsapp(e.target.value)}
+            placeholder="Ex: (11) 91234-5678"
+            className="w-full border rounded-lg p-2 text-sm mb-3"
+          />
+          <Button
+            onClick={handleAdicionarPadrinho}
+            disabled={abrindoWhatsapp}
+            className="w-full py-2.5 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700"
+          >
+            {abrindoWhatsapp ? "Salvando..." : "💬 Adicionar Contato Padrinho/Madrinha"}
+          </Button>
+        </section>
+
         {/* Sobre seus dados */}
         <section className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="font-medium text-blue-700 mb-1">ℹ️ Sobre seus dados</p>
           <p className="text-sm text-gray-700">
-            Todos os seus registros são armazenados de forma segura localmente no Supabase.
-            Nenhum login é necessário nesta versão.
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Em breve: opção para exportar e sincronizar com sua conta.
+            Todos os seus registros estão armazenados de forma segura e confiável, sob a proteção
+            da LGPD (Lei Geral de Proteção de Dados), e nunca são compartilhados.
           </p>
         </section>
 

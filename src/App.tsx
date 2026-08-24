@@ -8,6 +8,7 @@ import UrgeDashboardMVP from "./UrgeDashboardMVP";
 import Reunioes from "./pages/Reunioes";
 import Passos45 from "./pages/Passos45";
 import Passos89 from "./pages/Passos89";
+import HistoricoGatilhos from "./pages/HistoricoGatilhos";
 
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Layout/Header";
@@ -47,6 +48,9 @@ export default function App() {
 
               {/* ✅ Minhas Reuniões */}
               <Route path="/reunioes" element={<Reunioes />} />
+
+              {/* ✅ Histórico de Gatilhos */}
+              <Route path="/historico-gatilhos" element={<HistoricoGatilhos />} />
 
               {/* ✅ Passos 4º/5º e 8º/9º */}
               <Route path="/passos-4-5" element={<Passos45 />} />

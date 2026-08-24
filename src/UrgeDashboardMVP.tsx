@@ -8,6 +8,7 @@ import {
   Tooltip as RTooltip,
   ResponsiveContainer,
   Cell,
+  LabelList,
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -30,6 +31,44 @@ const TRADUCOES_GATILHOS: Record<string, string> = {
   absence_meetings: "Ausência de Reuniões",
   not_study_program: "Distanciamento do Programa",
 };
+
+// Abreviação de cada gatilho para o mapa de calor (2 letras quando há colisão)
+const GATILHO_ABREV: Record<string, string> = {
+  "Ausência de Reuniões": "A",
+  "Bar/Festa": "B",
+  "Cansaço": "C",
+  "Distanciamento do Programa": "D",
+  "Influência de Amigos / Grupo": "I",
+  "Noite/Insônia": "N",
+  Pornografia: "P",
+  Raiva: "Ra",
+  "Redes Sociais": "Re",
+  Sexo: "Se",
+  Solidão: "So",
+};
+
+// Cor categórica fixa de cada gatilho (usada no mapa de calor, rótulos e legendas)
+const GATILHO_COR: Record<string, string> = {
+  "Ausência de Reuniões": "#0284c7",
+  "Bar/Festa": "#9333ea",
+  "Cansaço": "#64748b",
+  "Distanciamento do Programa": "#78350f",
+  "Influência de Amigos / Grupo": "#0d9488",
+  "Noite/Insônia": "#4338ca",
+  Pornografia: "#dc2626",
+  Raiva: "#ea580c",
+  "Redes Sociais": "#2563eb",
+  Sexo: "#db2777",
+  Solidão: "#16a34a",
+};
+
+function abrevGatilho(nome: string) {
+  return GATILHO_ABREV[nome] || nome.charAt(0).toUpperCase();
+}
+
+function corGatilho(nome: string) {
+  return GATILHO_COR[nome] || "#6b7280";
+}
 
 type ParetoRow = { nome: string; count: number; intensidade: number };
 type HeatCellDetail = Record<
@@ -203,31 +242,111 @@ export default function UrgeDashboardMVP() {
     return data.filter((d) => new Date(d.created_at) >= limite).length;
   }, [data]);
 
-  // 📅 Recorrência por dia da semana
+  // 📅 Recorrência por dia da semana (com lista de gatilhos distintos por dia)
   const porDiaSemana = useMemo(() => {
-    const counts = Array(7).fill(0);
+    const porDia: Record<number, Record<string, number>> = {};
+    for (let d = 0; d < 7; d++) porDia[d] = {};
     data.forEach((d) => {
       const dt = new Date(d.created_at);
       const local = new Date(
         dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
       );
-      counts[local.getDay()]++;
+      const dia = local.getDay();
+      const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
+      porDia[dia][nome] = (porDia[dia][nome] || 0) + 1;
     });
-    return DIAS.map((dia, i) => ({ dia, ocorrencias: counts[i] }));
+    return DIAS.map((dia, i) => {
+      const entries = Object.entries(porDia[i]).sort((a, b) => b[1] - a[1]);
+      const ocorrencias = entries.reduce((s, [, c]) => s + c, 0);
+      return { dia, ocorrencias, gatilhos: entries.map(([nome]) => nome) };
+    });
   }, [data]);
 
-  // 🕐 Recorrência por horário do dia
+  // 🕐 Recorrência por horário do dia (com lista de gatilhos distintos por hora)
   const porHorario = useMemo(() => {
-    const counts = Array(24).fill(0);
+    const porHora: Record<number, Record<string, number>> = {};
+    for (let h = 0; h < 24; h++) porHora[h] = {};
     data.forEach((d) => {
       const dt = new Date(d.created_at);
       const local = new Date(
         dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
       );
-      counts[local.getHours()]++;
+      const hora = local.getHours();
+      const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
+      porHora[hora][nome] = (porHora[hora][nome] || 0) + 1;
     });
-    return counts.map((ocorrencias, i) => ({ hora: `${i}h`, ocorrencias }));
+    return Array.from({ length: 24 }, (_, i) => {
+      const entries = Object.entries(porHora[i]).sort((a, b) => b[1] - a[1]);
+      const ocorrencias = entries.reduce((s, [, c]) => s + c, 0);
+      return {
+        hora: `${i}h`,
+        ocorrencias,
+        gatilhos: entries.map(([nome]) => nome),
+      };
+    });
   }, [data]);
+
+  // 🧮 Estatísticas temporais por gatilho (para os Top 5)
+  const gatilhoTemporalStats = useMemo(() => {
+    const stats: Record<string, { porDia: number[]; porHora: number[] }> = {};
+    data.forEach((d) => {
+      const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
+      if (!stats[nome])
+        stats[nome] = { porDia: Array(7).fill(0), porHora: Array(24).fill(0) };
+      const dt = new Date(d.created_at);
+      const local = new Date(
+        dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+      );
+      stats[nome].porDia[local.getDay()]++;
+      stats[nome].porHora[local.getHours()]++;
+    });
+    return stats;
+  }, [data]);
+
+  // 🏆 Top 5 gatilhos: ocorrências + dia/horário mais frequente de cada um
+  const top5Gatilhos = useMemo(() => {
+    return paretoData.slice(0, 5).map((p) => {
+      const s = gatilhoTemporalStats[p.gatilho] || {
+        porDia: Array(7).fill(0),
+        porHora: Array(24).fill(0),
+      };
+      const maxDia = Math.max(...s.porDia);
+      const maxHora = Math.max(...s.porHora);
+      return {
+        gatilho: p.gatilho,
+        ocorrencias: p.ocorrencias,
+        diaTop: maxDia > 0 ? DIAS[s.porDia.indexOf(maxDia)] : "-",
+        horaTop: maxHora > 0 ? `${s.porHora.indexOf(maxHora)}h` : "-",
+      };
+    });
+  }, [paretoData, gatilhoTemporalStats]);
+
+  // ⏰ Horário Crítico dos Top 5: 2 dias e 2 horários mais frequentes de cada gatilho
+  const top5Temporal = useMemo(() => {
+    return paretoData.slice(0, 5).map((p) => {
+      const s = gatilhoTemporalStats[p.gatilho] || {
+        porDia: Array(7).fill(0),
+        porHora: Array(24).fill(0),
+      };
+      const dias = s.porDia
+        .map((c, i) => ({ label: DIAS[i], c }))
+        .filter((x) => x.c > 0)
+        .sort((a, b) => b.c - a.c)
+        .slice(0, 2)
+        .map((x) => `${x.label} (${x.c}x)`);
+      const horas = s.porHora
+        .map((c, i) => ({ label: `${i}h`, c }))
+        .filter((x) => x.c > 0)
+        .sort((a, b) => b.c - a.c)
+        .slice(0, 2)
+        .map((x) => `${x.label} (${x.c}x)`);
+      return {
+        gatilho: p.gatilho,
+        dias: dias.length ? dias.join(", ") : "-",
+        horas: horas.length ? horas.join(", ") : "-",
+      };
+    });
+  }, [paretoData, gatilhoTemporalStats]);
 
   const horarioCritico = useMemo(() => {
     let max = 0,
@@ -244,6 +363,62 @@ export default function UrgeDashboardMVP() {
     });
     return { max, diaCrit, horaCrit };
   }, [heatmapData]);
+
+  // 🏷️ Rótulo customizado das barras "Por Dia da Semana": total no topo + nome de
+  // cada gatilho distinto empilhado logo acima da barra, na cor categórica dele.
+  function DiaBarLabel(props: any) {
+    const { x, y, width, index } = props;
+    const item = porDiaSemana[index];
+    if (!item || item.ocorrencias === 0) return null;
+    const linhas = [String(item.ocorrencias), ...item.gatilhos];
+    const cx = x + width / 2;
+    return (
+      <g>
+        {linhas.map((linha, i) => (
+          <text
+            key={i}
+            x={cx}
+            y={y - 6 - (linhas.length - 1 - i) * 11}
+            textAnchor="middle"
+            fontSize={i === 0 ? 12 : 9}
+            fontWeight={i === 0 ? 700 : 600}
+            fill={i === 0 ? "#111827" : corGatilho(item.gatilhos[i - 1])}
+          >
+            {linha}
+          </text>
+        ))}
+      </g>
+    );
+  }
+
+  // 🕐 Tick customizado do eixo X "Por Horário": mantém a hora (0h, 2h, 4h...) e
+  // acrescenta, abaixo, o nome de cada gatilho distinto ocorrido naquela hora.
+  function HoraTick(props: any) {
+    const { x, y, payload } = props;
+    const item = porHorario.find((h) => h.hora === payload.value);
+    const nomes = item?.gatilhos.slice(0, 5) || [];
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text x={0} y={0} dy={10} textAnchor="middle" fontSize={10} fill="#374151">
+          {payload.value}
+        </text>
+        {nomes.map((n, i) => (
+          <text
+            key={i}
+            x={0}
+            y={0}
+            dy={10 + 9 * (i + 1)}
+            textAnchor="middle"
+            fontSize={7}
+            fontWeight={600}
+            fill={corGatilho(n)}
+          >
+            {n}
+          </text>
+        ))}
+      </g>
+    );
+  }
 
   // 📄 Exportação do Relatório Clínico em PDF
   function exportarPDF() {
@@ -470,7 +645,7 @@ export default function UrgeDashboardMVP() {
           <>
             {/* 📊 Gatilhos */}
             <Card
-              title={`Gatilhos (${periodo})`}
+              title={`Gatilhos (${periodo}) · ${data.length} registros`}
               onClick={() => setShowHistorico(true)}
               footer={
                 <span className="text-xs text-gray-400">
@@ -509,10 +684,10 @@ export default function UrgeDashboardMVP() {
 
             {/* 📅🕐 Recorrência por Dia da Semana e por Horário */}
             <div className="grid gap-6 md:grid-cols-2">
-              <Card title={`Por Dia da Semana (${periodo})`}>
-                <div className="h-56 md:h-64">
+              <Card title={`Por Dia da Semana (${periodo}) · ${data.length} registros`}>
+                <div className="h-80 md:h-[420px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={porDiaSemana} margin={{ bottom: 5 }}>
+                    <BarChart data={porDiaSemana} margin={{ top: 70, bottom: 5 }}>
                       <XAxis
                         dataKey="dia"
                         tick={{ fontSize: 12, fill: "#374151" }}
@@ -535,20 +710,22 @@ export default function UrgeDashboardMVP() {
                             )}
                           />
                         ))}
+                        <LabelList dataKey="ocorrencias" content={DiaBarLabel} />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </Card>
 
-              <Card title={`Por Horário (${periodo})`}>
-                <div className="h-56 md:h-64">
+              <Card title={`Por Horário (${periodo}) · ${data.length} registros`}>
+                <div className="h-80 md:h-[420px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={porHorario} margin={{ bottom: 5 }}>
                       <XAxis
                         dataKey="hora"
-                        tick={{ fontSize: 10, fill: "#374151" }}
+                        tick={HoraTick}
                         interval={1}
+                        height={130}
                       />
                       <YAxis
                         tick={{ fontSize: 12, fill: "#374151" }}
@@ -576,7 +753,7 @@ export default function UrgeDashboardMVP() {
             </div>
 
             {/* 🔥 Heatmap com mini-Pareto no hover */}
-            <Card title={`Mapa de Calor de Desejos (${periodo})`}>
+            <Card title={`Mapa de Calor de Desejos (${periodo}) · ${data.length} registros`}>
               <div className="overflow-x-auto">
                 <div className="min-w-[860px] relative" ref={heatmapWrapRef}>
                   <div className="grid grid-cols-[60px_repeat(24,minmax(22px,1fr))] gap-1">
@@ -609,6 +786,15 @@ export default function UrgeDashboardMVP() {
                               : v < 9
                               ? "#b30000"
                               : "#000000";
+
+                          const cellAggCor = heatmapDetails[rIdx][cIdx];
+                          const dominanteEntry = Object.entries(cellAggCor).sort(
+                            (a, b) =>
+                              a[1].count === b[1].count
+                                ? b[1].avg - a[1].avg
+                                : b[1].count - a[1].count
+                          )[0];
+                          const nomeDominante = dominanteEntry?.[0];
 
                           const onEnter: React.MouseEventHandler<HTMLDivElement> = (e) => {
                             const cellAgg = heatmapDetails[rIdx][cIdx];
@@ -650,8 +836,27 @@ export default function UrgeDashboardMVP() {
                                 borderRadius: "3px",
                                 height: "30px",
                                 cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                               }}
-                            />
+                            >
+                              {nomeDominante && (
+                                <span
+                                  style={{
+                                    fontSize: "10px",
+                                    fontWeight: 700,
+                                    lineHeight: "15px",
+                                    padding: "0 3px",
+                                    borderRadius: "999px",
+                                    color: corGatilho(nomeDominante),
+                                    background: "rgba(255,255,255,0.85)",
+                                  }}
+                                >
+                                  {abrevGatilho(nomeDominante)}
+                                </span>
+                              )}
+                            </div>
                           );
                         })}
                       </React.Fragment>
@@ -712,37 +917,108 @@ export default function UrgeDashboardMVP() {
                   <span className="text-xs text-gray-500">Mais crítico</span>
                 </div>
               </div>
+
+              {/* Legenda das abreviações de gatilhos exibidas no centro de cada célula */}
+              <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1.5">
+                {Object.entries(GATILHO_ABREV).map(([nome, sigla]) => (
+                  <div key={nome} className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <span
+                      className="inline-flex items-center justify-center rounded-full font-bold"
+                      style={{
+                        width: 16,
+                        height: 16,
+                        fontSize: 9,
+                        color: "#fff",
+                        backgroundColor: corGatilho(nome),
+                      }}
+                    >
+                      {sigla}
+                    </span>
+                    {nome}
+                  </div>
+                ))}
+              </div>
             </Card>
 
             {/* Resumo */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card title="Total de Registros">
-                <div className="text-2xl font-bold">{totalRegistros30d}</div>
-                <p className="text-xs text-gray-500 mt-1">Últimos 30 dias</p>
-              </Card>
-              <Card title="Gatilho Mais Comum">
-                <div className="text-2xl font-bold">
-                  {paretoData.length > 0 ? paretoData[0].gatilho : "-"}
+            <Card title="Total de Registros">
+              <div className="text-2xl font-bold">{totalRegistros30d}</div>
+              <p className="text-xs text-gray-500 mt-1">Últimos 30 dias</p>
+            </Card>
+
+            {/* 🏆 Top 5 — Gatilho Mais Comum */}
+            <Card title={`Gatilho Mais Comum — Top 5 (${periodo})`}>
+              {top5Gatilhos.length === 0 ? (
+                <p className="text-sm text-gray-500">Aguardando dados</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b">
+                        <th className="py-2 pr-4">#</th>
+                        <th className="py-2 pr-4">Gatilho</th>
+                        <th className="py-2 pr-4">Ocorrências</th>
+                        <th className="py-2 pr-4">Dia mais frequente</th>
+                        <th className="py-2">Horário mais frequente</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {top5Gatilhos.map((g, i) => (
+                        <tr key={g.gatilho} className="border-b last:border-0">
+                          <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
+                          <td className="py-2 pr-4 font-medium">
+                            <span
+                              className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle"
+                              style={{ backgroundColor: corGatilho(g.gatilho) }}
+                            />
+                            {g.gatilho}
+                          </td>
+                          <td className="py-2 pr-4">{g.ocorrencias}×</td>
+                          <td className="py-2 pr-4">{g.diaTop}</td>
+                          <td className="py-2">{g.horaTop}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {paretoData.length > 0
-                    ? `${paretoData[0].ocorrencias} ocorrências`
-                    : "Aguardando dados"}
-                </p>
-              </Card>
-              <Card title="Horário Crítico">
-                <div className="text-2xl font-bold">
-                  {horarioCritico.max > 0
-                    ? `${horarioCritico.diaCrit} ${horarioCritico.horaCrit}`
-                    : "-"}
+              )}
+            </Card>
+
+            {/* ⏰ Horário Crítico dos Top 5 */}
+            <Card title={`Horário Crítico — Top 5 (${periodo})`}>
+              {top5Temporal.length === 0 ? (
+                <p className="text-sm text-gray-500">Aguardando dados</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b">
+                        <th className="py-2 pr-4">#</th>
+                        <th className="py-2 pr-4">Gatilho</th>
+                        <th className="py-2 pr-4">Dias mais críticos</th>
+                        <th className="py-2">Horários mais críticos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {top5Temporal.map((g, i) => (
+                        <tr key={g.gatilho} className="border-b last:border-0">
+                          <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
+                          <td className="py-2 pr-4 font-medium">
+                            <span
+                              className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle"
+                              style={{ backgroundColor: corGatilho(g.gatilho) }}
+                            />
+                            {g.gatilho}
+                          </td>
+                          <td className="py-2 pr-4">{g.dias}</td>
+                          <td className="py-2">{g.horas}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {horarioCritico.max > 0
-                    ? `Intensidade média ${horarioCritico.max.toFixed(1)}`
-                    : "Aguardando dados"}
-                </p>
-              </Card>
-            </div>
+              )}
+            </Card>
           </>
         )}
       </main>

@@ -14,6 +14,7 @@ import {
   BookOpen,
   HeartHandshake,
   ChevronDown,
+  History,
 } from "lucide-react";
 import React from "react";
 import { useSos } from "@/lib/sosContext";
@@ -84,6 +85,7 @@ export default function Sidebar() {
         <nav className="space-y-1">
           <Item to="/dashboard" icon={Home}>Dashboard</Item>
           <Item to="/registros" icon={LineChart}>Registros de Fissuras</Item>
+          <Item to="/historico-gatilhos" icon={History}>Histórico de Gatilhos</Item>
           <Item to="/plano" icon={ClipboardList}>Plano de Prevenção</Item>
           <Item to="/reunioes" icon={Users}>Minhas Reuniões</Item>
           <Item to="/passos-4-5" icon={BookOpen}>4º/5º Passo</Item>
