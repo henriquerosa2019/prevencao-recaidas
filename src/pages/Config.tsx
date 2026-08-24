@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import Header from "@/components/Layout/Header";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +8,7 @@ export default function Config() {
   const [periodo, setPeriodo] = useState("7d");
   const [ativarAlertas, setAtivarAlertas] = useState(true);
   const [plano, setPlano] = useState("");
+  const [dataInicio, setDataInicio] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const { toast } = useToast();
@@ -20,7 +20,7 @@ export default function Config() {
       try {
         const { data, error } = await supabase
           .from("user_config")
-          .select("default_period, alerts_enabled, prevention_plan")
+          .select("default_period, alerts_enabled, prevention_plan, sobriety_start_date")
           .limit(1)
           .maybeSingle();
 
@@ -30,6 +30,7 @@ export default function Config() {
           setPeriodo(data.default_period || "7d");
           setAtivarAlertas(data.alerts_enabled ?? true);
           setPlano(data.prevention_plan || "");
+          setDataInicio(data.sobriety_start_date || "");
         }
       } catch (err) {
         console.warn("Nenhuma configuração encontrada ainda.");
@@ -57,6 +58,7 @@ export default function Config() {
             default_period: periodo,
             alerts_enabled: ativarAlertas,
             prevention_plan: plano.trim(),
+            sobriety_start_date: dataInicio || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existente.id);
@@ -68,6 +70,7 @@ export default function Config() {
             default_period: periodo,
             alerts_enabled: ativarAlertas,
             prevention_plan: plano.trim(),
+            sobriety_start_date: dataInicio || null,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -94,18 +97,34 @@ export default function Config() {
 
   return (
     <>
-      <Header />
-
       <div className="max-w-3xl mx-auto bg-white shadow rounded-xl p-6 mt-6 space-y-8">
         {/* 🔗 Navegação */}
         <div className="flex justify-between mb-4">
           <Button variant="outline" onClick={() => navigate("/dashboard")}>
             🏠 Dashboard
           </Button>
-          <Button variant="outline" onClick={() => navigate("/registrar")}>
+          <Button variant="outline" onClick={() => navigate("/registros")}>
             ✍️ Registrar Desejo
           </Button>
         </div>
+
+        {/* Data de início da recuperação */}
+        <section className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h2 className="text-xl font-bold mb-2">🏆 Sua Data de Início</h2>
+          <p className="text-sm text-gray-600 mb-3">
+            Usada para calcular seu contador de dias limpo no Dashboard.
+          </p>
+          <label className="block text-sm font-medium mb-1">
+            Data em que você começou sua recuperação
+          </label>
+          <input
+            type="date"
+            value={dataInicio}
+            max={new Date().toISOString().slice(0, 10)}
+            onChange={(e) => setDataInicio(e.target.value)}
+            className="w-full border rounded-lg p-2 text-sm"
+          />
+        </section>
 
         {/* Preferências */}
         <section>
@@ -149,7 +168,8 @@ export default function Config() {
             className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400"
           />
           <p className="text-xs text-gray-500 mt-2">
-            Este plano ficará disponível rapidamente quando você mais precisar.
+            Este plano ficará disponível rapidamente quando você mais precisar (inclusive no
+            botão de emergência).
           </p>
         </section>
 
