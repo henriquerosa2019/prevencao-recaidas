@@ -8,9 +8,7 @@ import {
   Tooltip as RTooltip,
   ResponsiveContainer,
   Cell,
-  LabelList,
-  PieChart,
-  Pie,
+  Treemap,
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -288,6 +286,30 @@ export default function UrgeDashboardMVP() {
     });
   }, [data]);
 
+  // 🌳 Dados do mapa de árvore "Por Dia da Semana" (só dias com registros)
+  const diaTreemapData = useMemo(() => {
+    const itens = porDiaSemana.filter((d) => d.ocorrencias > 0);
+    const max = Math.max(1, ...itens.map((d) => d.ocorrencias));
+    return itens.map((d) => ({
+      name: d.dia,
+      value: d.ocorrencias,
+      gatilhos: d.gatilhos,
+      max,
+    }));
+  }, [porDiaSemana]);
+
+  // 🌳 Dados do mapa de árvore "Por Horário" (só horários com registros)
+  const horaTreemapData = useMemo(() => {
+    const itens = porHorario.filter((h) => h.ocorrencias > 0);
+    const max = Math.max(1, ...itens.map((h) => h.ocorrencias));
+    return itens.map((h) => ({
+      name: h.hora,
+      value: h.ocorrencias,
+      gatilhos: h.gatilhos,
+      max,
+    }));
+  }, [porHorario]);
+
   // 🧮 Estatísticas temporais por gatilho (para os Top 5)
   const gatilhoTemporalStats = useMemo(() => {
     const stats: Record<string, { porDia: number[]; porHora: number[] }> = {};
@@ -366,88 +388,52 @@ export default function UrgeDashboardMVP() {
     return { max, diaCrit, horaCrit };
   }, [heatmapData]);
 
-  // 🏷️ Rótulo customizado das barras "Por Dia da Semana": total no topo + nome de
-  // 🔢 Badge numérico DENTRO da barra (reutilizado em "Por Dia da Semana" e "Por Horário")
-  function BarCountBadge(props: any) {
-    const { x, y, width, height, value } = props;
-    if (!value) return null;
-    const cx = x + width / 2;
-    const cy = height > 22 ? y + 14 : y + Math.max(8, height / 2);
+  // 🌳 Conteúdo customizado das células dos mapas de árvore ("Por Dia da Semana" e
+  // "Por Horário"): cor pela mesma escala de intensidade, frequência no topo e o
+  // nome de cada gatilho daquela célula, na cor categórica dele — quando a célula
+  // é grande o bastante para exibir o texto com clareza (mais visibilidade possível).
+  function TreemapCellContent(props: any) {
+    const { x, y, width, height, name, value, gatilhos = [], max } = props;
+    if (!width || !height || width <= 0 || height <= 0) return null;
+    const bg = getBarColor(value, max || 1);
+    const showLabel = width > 32 && height > 22;
+    const showGatilhos = width > 55 && height > 38;
+    const maxNomes = Math.max(0, Math.floor((height - 26) / 12));
+    const nomes = gatilhos.slice(0, maxNomes);
     return (
       <g>
-        <rect x={cx - 13} y={cy - 9} width={26} height={16} rx={8} fill="rgba(255,255,255,0.9)" />
-        <text
-          x={cx}
-          y={cy}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize={11}
-          fontWeight={700}
-          fill="#111827"
-        >
-          {value}
-        </text>
-      </g>
-    );
-  }
-
-  // 🏷️ Nomes dos gatilhos de "Por Dia da Semana": no topo do gráfico, em ângulo de
-  // 45º (ascendente da esquerda para a direita), cada um na cor categórica dele.
-  function DiaGatilhoLabels(props: any) {
-    const { x, y, width, index } = props;
-    const item = porDiaSemana[index];
-    if (!item || item.gatilhos.length === 0) return null;
-    const cx = x + width / 2;
-    return (
-      <g>
-        {item.gatilhos.map((nome, i) => {
-          const ty = y - 8 - i * 12;
-          return (
+        <rect x={x} y={y} width={width} height={height} style={{ fill: bg, stroke: "#fff", strokeWidth: 2 }} />
+        <title>
+          {name} · {value} registro{value === 1 ? "" : "s"}
+          {gatilhos.length > 0 ? ` · ${gatilhos.join(", ")}` : ""}
+        </title>
+        {showLabel && (
+          <text
+            x={x + width / 2}
+            y={y + 17}
+            textAnchor="middle"
+            fontSize={13}
+            fontWeight={700}
+            fill="#111827"
+          >
+            {name} · {value}
+          </text>
+        )}
+        {showGatilhos &&
+          nomes.map((g: string, i: number) => (
             <text
-              key={nome}
-              x={cx}
-              y={ty}
-              transform={`rotate(-45, ${cx}, ${ty})`}
-              textAnchor="start"
+              key={g}
+              x={x + width / 2}
+              y={y + 34 + i * 12}
+              textAnchor="middle"
               fontSize={10}
               fontWeight={600}
-              fill={corGatilho(nome)}
+              fill={corGatilho(g)}
             >
-              {nome}
+              {g}
             </text>
-          );
-        })}
+          ))}
       </g>
-    );
-  }
-
-  // 🥧 Rótulo de cada fatia do gráfico de pizza "Por Horário": mostra a hora
-  // apenas quando há registros naquele horário.
-  function HoraPieLabel(props: any) {
-    const { hora, ocorrencias } = props;
-    return ocorrencias > 0 ? hora : "";
-  }
-
-  // 🥧 Tooltip customizado do gráfico de pizza "Por Horário": hora, total de
-  // registros e o nome de cada gatilho daquele horário, na cor categórica dele.
-  function HoraPieTooltip({ active, payload }: any) {
-    if (!active || !payload || !payload.length) return null;
-    const item = payload[0].payload;
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs max-w-[220px]">
-        <div className="font-semibold text-gray-800 mb-1">
-          {item.hora} · {item.ocorrencias} registro{item.ocorrencias === 1 ? "" : "s"}
-        </div>
-        {item.gatilhos.length > 0 && (
-          <div className="space-y-0.5">
-            {item.gatilhos.map((g: string) => (
-              <div key={g} style={{ color: corGatilho(g) }}>
-                {g}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     );
   }
 
@@ -713,82 +699,49 @@ export default function UrgeDashboardMVP() {
               </div>
             </Card>
 
-            {/* 📅🕐 Recorrência por Dia da Semana e por Horário */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card title={`Por Dia da Semana (${periodo}) · ${data.length} registros`}>
-                <div className="h-80 md:h-[420px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={porDiaSemana} margin={{ top: 100, right: 30, bottom: 5 }}>
-                      <XAxis
-                        dataKey="dia"
-                        tick={{ fontSize: 12, fill: "#374151" }}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 12, fill: "#374151" }}
-                        allowDecimals={false}
-                      />
-                      <RTooltip />
-                      <Bar dataKey="ocorrencias" radius={[6, 6, 0, 0]}>
-                        {porDiaSemana.map((entry, i) => (
-                          <Cell
-                            key={i}
-                            fill={getBarColor(
-                              entry.ocorrencias,
-                              Math.max(
-                                1,
-                                ...porDiaSemana.map((d) => d.ocorrencias)
-                              )
-                            )}
-                          />
-                        ))}
-                        <LabelList dataKey="ocorrencias" content={BarCountBadge} />
-                        <LabelList dataKey="ocorrencias" content={DiaGatilhoLabels} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
+            {/* 📅 Recorrência por Dia da Semana — Mapa de Árvore */}
+            <Card
+              title={`Por Dia da Semana (${periodo}) · ${data.length} registros`}
+              footer={
+                <span className="text-xs text-gray-400">
+                  O tamanho de cada célula é proporcional ao número de registros do dia
+                </span>
+              }
+            >
+              <div className="h-[420px] md:h-[520px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <Treemap
+                    data={diaTreemapData}
+                    dataKey="value"
+                    nameKey="name"
+                    isAnimationActive={false}
+                    content={<TreemapCellContent />}
+                  />
+                </ResponsiveContainer>
+              </div>
+            </Card>
 
-              <Card
-                title={`Por Horário (${periodo}) · ${data.length} registros`}
-                footer={
-                  <span className="text-xs text-gray-400">
-                    Passe o mouse sobre uma fatia para ver os gatilhos daquele horário
-                  </span>
-                }
-              >
-                <div className="h-80 md:h-[420px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={porHorario}
-                        dataKey="ocorrencias"
-                        nameKey="hora"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius="75%"
-                        label={HoraPieLabel}
-                        labelLine={{ stroke: "#9ca3af" }}
-                      >
-                        {porHorario.map((entry, i) => (
-                          <Cell
-                            key={i}
-                            fill={getBarColor(
-                              entry.ocorrencias,
-                              Math.max(
-                                1,
-                                ...porHorario.map((d) => d.ocorrencias)
-                              )
-                            )}
-                          />
-                        ))}
-                      </Pie>
-                      <RTooltip content={<HoraPieTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-            </div>
+            {/* 🕐 Recorrência por Horário — Mapa de Árvore */}
+            <Card
+              title={`Por Horário (${periodo}) · ${data.length} registros`}
+              footer={
+                <span className="text-xs text-gray-400">
+                  O tamanho de cada célula é proporcional ao número de registros do horário
+                </span>
+              }
+            >
+              <div className="h-[420px] md:h-[520px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <Treemap
+                    data={horaTreemapData}
+                    dataKey="value"
+                    nameKey="name"
+                    isAnimationActive={false}
+                    content={<TreemapCellContent />}
+                  />
+                </ResponsiveContainer>
+              </div>
+            </Card>
 
             {/* 🔥 Heatmap com mini-Pareto no hover */}
             <Card title={`Mapa de Calor de Desejos (${periodo}) · ${data.length} registros`}>
