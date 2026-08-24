@@ -365,57 +365,77 @@ export default function UrgeDashboardMVP() {
   }, [heatmapData]);
 
   // 🏷️ Rótulo customizado das barras "Por Dia da Semana": total no topo + nome de
-  // cada gatilho distinto empilhado logo acima da barra, na cor categórica dele.
-  function DiaBarLabel(props: any) {
-    const { x, y, width, index } = props;
-    const item = porDiaSemana[index];
-    if (!item || item.ocorrencias === 0) return null;
-    const linhas = [String(item.ocorrencias), ...item.gatilhos];
+  // 🔢 Badge numérico DENTRO da barra (reutilizado em "Por Dia da Semana" e "Por Horário")
+  function BarCountBadge(props: any) {
+    const { x, y, width, height, value } = props;
+    if (!value) return null;
     const cx = x + width / 2;
+    const cy = height > 22 ? y + 14 : y + Math.max(8, height / 2);
     return (
       <g>
-        {linhas.map((linha, i) => (
-          <text
-            key={i}
-            x={cx}
-            y={y - 6 - (linhas.length - 1 - i) * 11}
-            textAnchor="middle"
-            fontSize={i === 0 ? 12 : 9}
-            fontWeight={i === 0 ? 700 : 600}
-            fill={i === 0 ? "#111827" : corGatilho(item.gatilhos[i - 1])}
-          >
-            {linha}
-          </text>
-        ))}
+        <rect x={cx - 13} y={cy - 9} width={26} height={16} rx={8} fill="rgba(255,255,255,0.9)" />
+        <text
+          x={cx}
+          y={cy}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize={11}
+          fontWeight={700}
+          fill="#111827"
+        >
+          {value}
+        </text>
       </g>
     );
   }
 
-  // 🕐 Tick customizado do eixo X "Por Horário": mantém a hora (0h, 2h, 4h...) e
-  // acrescenta, abaixo, o nome de cada gatilho distinto ocorrido naquela hora.
-  function HoraTick(props: any) {
+  // 🏷️ Nomes dos gatilhos de "Por Dia da Semana": no topo do gráfico, em ângulo de
+  // 45º (ascendente da esquerda para a direita), cada um na cor categórica dele.
+  function DiaGatilhoLabels(props: any) {
+    const { x, y, width, index } = props;
+    const item = porDiaSemana[index];
+    if (!item || item.gatilhos.length === 0) return null;
+    const cx = x + width / 2;
+    return (
+      <g>
+        {item.gatilhos.map((nome, i) => {
+          const ty = y - 8 - i * 12;
+          return (
+            <text
+              key={nome}
+              x={cx}
+              y={ty}
+              transform={`rotate(-45, ${cx}, ${ty})`}
+              textAnchor="start"
+              fontSize={10}
+              fontWeight={600}
+              fill={corGatilho(nome)}
+            >
+              {nome}
+            </text>
+          );
+        })}
+      </g>
+    );
+  }
+
+  // 🕐 Tick do eixo X "Por Horário": mantém a hora (0h, 2h, 4h...) e acrescenta os
+  // nomes dos gatilhos daquela hora, no rodapé, em ângulo — igual ao gráfico "Gatilhos".
+  function HoraFooterTick(props: any) {
     const { x, y, payload } = props;
     const item = porHorario.find((h) => h.hora === payload.value);
-    const nomes = item?.gatilhos.slice(0, 5) || [];
+    const nomes = item?.gatilhos || [];
     return (
-      <g transform={`translate(${x},${y})`}>
-        <text x={0} y={0} dy={10} textAnchor="middle" fontSize={10} fill="#374151">
-          {payload.value}
+      <g transform={`translate(${x},${y}) rotate(-20)`}>
+        <text textAnchor="end" fontSize={11} fill="#374151" dy={4}>
+          <tspan fontWeight={700}>{payload.value}</tspan>
+          {nomes.map((n) => (
+            <tspan key={n} fill={corGatilho(n)}>
+              {" · "}
+              {n}
+            </tspan>
+          ))}
         </text>
-        {nomes.map((n, i) => (
-          <text
-            key={i}
-            x={0}
-            y={0}
-            dy={10 + 9 * (i + 1)}
-            textAnchor="middle"
-            fontSize={7}
-            fontWeight={600}
-            fill={corGatilho(n)}
-          >
-            {n}
-          </text>
-        ))}
       </g>
     );
   }
@@ -687,7 +707,7 @@ export default function UrgeDashboardMVP() {
               <Card title={`Por Dia da Semana (${periodo}) · ${data.length} registros`}>
                 <div className="h-80 md:h-[420px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={porDiaSemana} margin={{ top: 70, bottom: 5 }}>
+                    <BarChart data={porDiaSemana} margin={{ top: 100, right: 30, bottom: 5 }}>
                       <XAxis
                         dataKey="dia"
                         tick={{ fontSize: 12, fill: "#374151" }}
@@ -710,7 +730,8 @@ export default function UrgeDashboardMVP() {
                             )}
                           />
                         ))}
-                        <LabelList dataKey="ocorrencias" content={DiaBarLabel} />
+                        <LabelList dataKey="ocorrencias" content={BarCountBadge} />
+                        <LabelList dataKey="ocorrencias" content={DiaGatilhoLabels} />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -723,9 +744,9 @@ export default function UrgeDashboardMVP() {
                     <BarChart data={porHorario} margin={{ bottom: 5 }}>
                       <XAxis
                         dataKey="hora"
-                        tick={HoraTick}
+                        tick={HoraFooterTick}
                         interval={1}
-                        height={130}
+                        height={120}
                       />
                       <YAxis
                         tick={{ fontSize: 12, fill: "#374151" }}
@@ -745,6 +766,7 @@ export default function UrgeDashboardMVP() {
                             )}
                           />
                         ))}
+                        <LabelList dataKey="ocorrencias" content={BarCountBadge} />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
