@@ -1,18 +1,18 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
 const FELLOWSHIPS = ["AA", "NA", "DASA", "Al-Anon", "Grupo de Apoio Online", "Outro"];
 const MEETING_TYPES = [
-  "TemÃ¡tica",
+  "Temática",
   "Depoimento",
   "Estudo de Literatura",
   "Passos",
-  "ReuniÃ£o de NegÃ³cios",
+  "Reunião de Negócios",
   "Festiva",
 ];
-const SERVICES = ["CafÃ©", "RecepÃ§Ã£o", "Leitura de Literatura", "Secretariado"];
+const SERVICES = ["Café", "Recepção", "Leitura de Literatura", "Secretariado"];
 
 function nowLocalDatetime() {
   const d = new Date();
@@ -43,7 +43,7 @@ export default function Reunioes() {
       .from("meeting_logs")
       .select("*")
       .order("meeting_date", { ascending: false });
-    if (error) console.error("Erro ao carregar reuniÃµes:", error);
+    if (error) console.error("Erro ao carregar reuniões:", error);
     else setHistorico(data || []);
     setCarregando(false);
   }
@@ -68,8 +68,8 @@ export default function Reunioes() {
       if (error) throw error;
 
       toast({
-        title: "âœ… ReuniÃ£o registrada",
-        description: "Sua presenÃ§a foi salva com sucesso!",
+        title: "✅ Reunião registrada",
+        description: "Sua presença foi salva com sucesso!",
         duration: 4000,
       });
       setGroupName("");
@@ -78,10 +78,10 @@ export default function Reunioes() {
       setMeetingDate(nowLocalDatetime());
       carregarHistorico();
     } catch (err: any) {
-      console.error("Erro ao salvar reuniÃ£o:", err.message || err);
+      console.error("Erro ao salvar reunião:", err.message || err);
       toast({
         title: "Erro ao salvar",
-        description: "Verifique as permissÃµes no Supabase (RLS).",
+        description: "Verifique as permissões no Supabase (RLS).",
         duration: 5000,
       });
     } finally {
@@ -103,7 +103,7 @@ export default function Reunioes() {
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl bg-white shadow border border-gray-200 p-4 text-center">
           <p className="text-2xl font-bold text-blue-700">{contadores.mes}</p>
-          <p className="text-xs text-gray-500 mt-1">Este mÃªs</p>
+          <p className="text-xs text-gray-500 mt-1">Este mês</p>
         </div>
         <div className="rounded-xl bg-white shadow border border-gray-200 p-4 text-center">
           <p className="text-2xl font-bold text-blue-700">{contadores.ano}</p>
@@ -116,7 +116,7 @@ export default function Reunioes() {
       </div>
 
       <div className="bg-white shadow rounded-xl p-6 space-y-4">
-        <h2 className="text-xl font-bold">âœï¸ Registrar ReuniÃ£o</h2>
+        <h2 className="text-xl font-bold">✍️ Registrar Reunião</h2>
 
         <div className="grid md:grid-cols-2 gap-4">
           <div>
@@ -149,12 +149,12 @@ export default function Reunioes() {
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Ex: Grupo EsperanÃ§a"
+              placeholder="Ex: Grupo Esperança"
               className="w-full border rounded-lg p-2 text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Tipo de reuniÃ£o</label>
+            <label className="block text-sm font-medium mb-1">Tipo de reunião</label>
             <select
               value={meetingType}
               onChange={(e) => setMeetingType(e.target.value)}
@@ -168,7 +168,7 @@ export default function Reunioes() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">ServiÃ§o realizado</label>
+          <label className="block text-sm font-medium mb-2">Serviço realizado</label>
           <div className="flex flex-wrap gap-3">
             {SERVICES.map((s) => (
               <label key={s} className="flex items-center gap-1.5 text-sm">
@@ -184,12 +184,12 @@ export default function Reunioes() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">ObservaÃ§Ãµes</label>
+          <label className="block text-sm font-medium mb-1">Observações</label>
           <textarea
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="O que essa reuniÃ£o te trouxe hoje?"
+            placeholder="O que essa reunião te trouxe hoje?"
             className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400"
           />
         </div>
@@ -201,16 +201,16 @@ export default function Reunioes() {
             salvando ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {salvando ? "Salvando..." : "Salvar ReuniÃ£o"}
+          {salvando ? "Salvando..." : "Salvar Reunião"}
         </Button>
       </div>
 
       <div className="bg-white shadow rounded-xl p-6">
-        <h2 className="text-xl font-bold mb-4">ðŸ“‹ HistÃ³rico de ReuniÃµes</h2>
+        <h2 className="text-xl font-bold mb-4">📋 Histórico de Reuniões</h2>
         {carregando ? (
           <p className="text-center text-gray-500 py-4">Carregando...</p>
         ) : historico.length === 0 ? (
-          <p className="text-center text-gray-500 py-4">Nenhuma reuniÃ£o registrada ainda.</p>
+          <p className="text-center text-gray-500 py-4">Nenhuma reunião registrada ainda.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -220,7 +220,7 @@ export default function Reunioes() {
                   <th className="py-2 pr-4">Irmandade</th>
                   <th className="py-2 pr-4">Grupo</th>
                   <th className="py-2 pr-4">Tipo</th>
-                  <th className="py-2">ServiÃ§o</th>
+                  <th className="py-2">Serviço</th>
                 </tr>
               </thead>
               <tbody>
@@ -232,9 +232,9 @@ export default function Reunioes() {
                       })}
                     </td>
                     <td className="py-2 pr-4">{h.fellowship}</td>
-                    <td className="py-2 pr-4">{h.group_name || "â€”"}</td>
-                    <td className="py-2 pr-4">{h.meeting_type || "â€”"}</td>
-                    <td className="py-2 text-gray-600">{h.service || "â€”"}</td>
+                    <td className="py-2 pr-4">{h.group_name || "—"}</td>
+                    <td className="py-2 pr-4">{h.meeting_type || "—"}</td>
+                    <td className="py-2 text-gray-600">{h.service || "—"}</td>
                   </tr>
                 ))}
               </tbody>

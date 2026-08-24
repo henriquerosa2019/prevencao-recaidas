@@ -203,6 +203,32 @@ export default function UrgeDashboardMVP() {
     return data.filter((d) => new Date(d.created_at) >= limite).length;
   }, [data]);
 
+  // 📅 Recorrência por dia da semana
+  const porDiaSemana = useMemo(() => {
+    const counts = Array(7).fill(0);
+    data.forEach((d) => {
+      const dt = new Date(d.created_at);
+      const local = new Date(
+        dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+      );
+      counts[local.getDay()]++;
+    });
+    return DIAS.map((dia, i) => ({ dia, ocorrencias: counts[i] }));
+  }, [data]);
+
+  // 🕐 Recorrência por horário do dia
+  const porHorario = useMemo(() => {
+    const counts = Array(24).fill(0);
+    data.forEach((d) => {
+      const dt = new Date(d.created_at);
+      const local = new Date(
+        dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+      );
+      counts[local.getHours()]++;
+    });
+    return counts.map((ocorrencias, i) => ({ hora: `${i}h`, ocorrencias }));
+  }, [data]);
+
   const horarioCritico = useMemo(() => {
     let max = 0,
       diaCrit = "",
@@ -480,6 +506,74 @@ export default function UrgeDashboardMVP() {
                 </ResponsiveContainer>
               </div>
             </Card>
+
+            {/* 📅🕐 Recorrência por Dia da Semana e por Horário */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card title={`Por Dia da Semana (${periodo})`}>
+                <div className="h-56 md:h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={porDiaSemana} margin={{ bottom: 5 }}>
+                      <XAxis
+                        dataKey="dia"
+                        tick={{ fontSize: 12, fill: "#374151" }}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: "#374151" }}
+                        allowDecimals={false}
+                      />
+                      <RTooltip />
+                      <Bar dataKey="ocorrencias" radius={[6, 6, 0, 0]}>
+                        {porDiaSemana.map((entry, i) => (
+                          <Cell
+                            key={i}
+                            fill={getBarColor(
+                              entry.ocorrencias,
+                              Math.max(
+                                1,
+                                ...porDiaSemana.map((d) => d.ocorrencias)
+                              )
+                            )}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+
+              <Card title={`Por Horário (${periodo})`}>
+                <div className="h-56 md:h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={porHorario} margin={{ bottom: 5 }}>
+                      <XAxis
+                        dataKey="hora"
+                        tick={{ fontSize: 10, fill: "#374151" }}
+                        interval={1}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: "#374151" }}
+                        allowDecimals={false}
+                      />
+                      <RTooltip />
+                      <Bar dataKey="ocorrencias" radius={[4, 4, 0, 0]}>
+                        {porHorario.map((entry, i) => (
+                          <Cell
+                            key={i}
+                            fill={getBarColor(
+                              entry.ocorrencias,
+                              Math.max(
+                                1,
+                                ...porHorario.map((d) => d.ocorrencias)
+                              )
+                            )}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </div>
 
             {/* 🔥 Heatmap com mini-Pareto no hover */}
             <Card title={`Mapa de Calor de Desejos (${periodo})`}>
