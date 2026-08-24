@@ -388,18 +388,42 @@ export default function UrgeDashboardMVP() {
     return { max, diaCrit, horaCrit };
   }, [heatmapData]);
 
+  // Estimativa simples de largura de um texto em px, para decidir se cabe numa célula
+  // sem precisar medir o DOM — evita texto vazando para fora da célula em telas estreitas.
+  function largImg(texto: string, fontSize: number) {
+    return texto.length * fontSize * 0.6;
+  }
+
   // 🌳 Conteúdo customizado das células dos mapas de árvore ("Por Dia da Semana" e
   // "Por Horário"): cor pela mesma escala de intensidade, frequência no topo e o
-  // nome de cada gatilho daquela célula, na cor categórica dele — quando a célula
-  // é grande o bastante para exibir o texto com clareza (mais visibilidade possível).
+  // nome de cada gatilho daquela célula. Cada linha de texto só é desenhada quando
+  // cabe de fato dentro da célula (largura e altura reais), o que torna o gráfico
+  // responsivo em qualquer tamanho de tela, do desktop ao celular. Em células com
+  // fundo alaranjado/avermelhado/escuro o texto vira branco para garantir contraste;
+  // em fundos claros (amarelo pálido) mantém a cor categórica de cada gatilho.
   function TreemapCellContent(props: any) {
     const { x, y, width, height, name, value, gatilhos = [], max } = props;
     if (!width || !height || width <= 0 || height <= 0) return null;
+    const ratio = value / (max || 1);
     const bg = getBarColor(value, max || 1);
-    const showLabel = width > 32 && height > 22;
-    const showGatilhos = width > 55 && height > 38;
-    const maxNomes = Math.max(0, Math.floor((height - 26) / 12));
-    const nomes = gatilhos.slice(0, maxNomes);
+    // getBarColor: ratio<=0.1 quase-branco, <=0.2 amarelo pálido (fundos claros) —
+    // acima disso já é pêssego/laranja/vermelho/vinho (fundos escuros/avermelhados).
+    const fundoClaro = ratio <= 0.2;
+    const corRotulo = fundoClaro ? "#111827" : "#ffffff";
+
+    const margemInterna = 6;
+    const larguraUtil = width - margemInterna;
+
+    const headerTexto = `${name} · ${value}`;
+    const showLabel = width > 28 && height > 18 && largImg(headerTexto, 12) <= larguraUtil;
+
+    const linhasMax = showLabel ? Math.max(0, Math.floor((height - 24) / 12)) : 0;
+    const nomesVisiveis: string[] = [];
+    for (const g of gatilhos) {
+      if (nomesVisiveis.length >= linhasMax) break;
+      if (largImg(g, 10) <= larguraUtil) nomesVisiveis.push(g);
+    }
+
     return (
       <g>
         <rect x={x} y={y} width={width} height={height} style={{ fill: bg, stroke: "#fff", strokeWidth: 2 }} />
@@ -410,29 +434,28 @@ export default function UrgeDashboardMVP() {
         {showLabel && (
           <text
             x={x + width / 2}
-            y={y + 17}
+            y={y + 16}
             textAnchor="middle"
-            fontSize={13}
+            fontSize={12}
             fontWeight={700}
-            fill="#111827"
+            fill={corRotulo}
           >
-            {name} · {value}
+            {headerTexto}
           </text>
         )}
-        {showGatilhos &&
-          nomes.map((g: string, i: number) => (
-            <text
-              key={g}
-              x={x + width / 2}
-              y={y + 34 + i * 12}
-              textAnchor="middle"
-              fontSize={10}
-              fontWeight={600}
-              fill={corGatilho(g)}
-            >
-              {g}
-            </text>
-          ))}
+        {nomesVisiveis.map((g, i) => (
+          <text
+            key={g}
+            x={x + width / 2}
+            y={y + 32 + i * 12}
+            textAnchor="middle"
+            fontSize={10}
+            fontWeight={600}
+            fill={fundoClaro ? corGatilho(g) : "#ffffff"}
+          >
+            {g}
+          </text>
+        ))}
       </g>
     );
   }
