@@ -1,15 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip as RTooltip,
-  ResponsiveContainer,
-  Cell,
-  Treemap,
-} from "recharts";
+import { ResponsiveContainer, Treemap } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Activity, FileDown, Flame, ShieldCheck, Sparkles, Trophy } from "lucide-react";
@@ -875,55 +866,56 @@ export default function UrgeDashboardMVP() {
               />
             </div>
 
-            {/* 📊 Gatilhos */}
+            {/* 📊 Gatilhos — mesmo layout de ranking do Histórico de Gatilhos */}
             <Panel
               title={`Gatilhos (${periodo})`}
               subtitle={`${data.length} registros no período`}
               footer="Clique para ver o histórico completo de registros"
               onClick={() => setShowHistorico(true)}
             >
-              <div className="h-72 md:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={paretoData} margin={{ bottom: 60, left: -18 }}>
-                    <XAxis
-                      dataKey="gatilho"
-                      tick={{ fontSize: 11, dy: 8, fill: "oklch(0.82 0.04 280)" }}
-                      interval={0}
-                      angle={-22}
-                      textAnchor="end"
-                      height={100}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "oklch(0.75 0.04 280)" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <RTooltip
-                      cursor={{ fill: "oklch(0.7 0.1 285 / 10%)" }}
-                      contentStyle={{
-                        background: "oklch(0.22 0.06 276 / 95%)",
-                        border: "1px solid oklch(0.72 0.09 280 / 25%)",
-                        borderRadius: 14,
-                        color: "oklch(0.98 0.01 280)",
-                        boxShadow: "0 20px 50px -20px rgba(0,0,0,.8)",
-                      }}
-                      labelStyle={{ color: "oklch(0.98 0.01 280)", fontWeight: 600 }}
-                      itemStyle={{ color: "oklch(0.98 0.01 280)" }}
-                    />
-                    <Bar dataKey="ocorrencias" radius={[8, 8, 0, 0]} name="Ocorrências">
-                      {paretoData.map((entry, i) => (
-                        <Cell
-                          key={i}
-                          fill={corGatilho(entry.gatilho)}
-                          fillOpacity={0.35 + 0.65 * (entry.ocorrencias / maxParetoValue)}
+              {paretoData.length === 0 ? (
+                <p className="text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
+                  Sem registros no período selecionado.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {paretoData.map((r, i) => (
+                    <div key={r.gatilho} className="flex items-center gap-3">
+                      <span className="text-xs w-5" style={{ color: "var(--aurora-muted-foreground)" }}>
+                        {i + 1}
+                      </span>
+                      <span
+                        className="text-sm w-44 shrink-0 truncate flex items-center gap-1.5"
+                        style={{ color: "var(--aurora-foreground)" }}
+                      >
+                        <span
+                          className="inline-block w-2 h-2 rounded-full"
+                          style={{ backgroundColor: corGatilho(r.gatilho) }}
                         />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+                        {r.gatilho}
+                      </span>
+                      <div
+                        className="flex-1 rounded-full h-3 overflow-hidden"
+                        style={{ backgroundColor: "var(--aurora-secondary)" }}
+                      >
+                        <div
+                          className="h-3 rounded-full"
+                          style={{
+                            width: `${Math.max(4, (r.ocorrencias / maxParetoValue) * 100)}%`,
+                            backgroundColor: corGatilho(r.gatilho),
+                          }}
+                        />
+                      </div>
+                      <span
+                        className="text-sm font-semibold w-10 text-right"
+                        style={{ color: "var(--aurora-foreground)" }}
+                      >
+                        {r.ocorrencias}×
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Panel>
 
             {/* 📅 Recorrência por Dia da Semana — Mapa de Árvore */}
