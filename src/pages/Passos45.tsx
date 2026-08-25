@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { isTrialExpired, TRIAL_EXPIRED_MESSAGE } from "@/lib/trialGate";
 
 export default function Passos45() {
   const [subject, setSubject] = useState("");
@@ -32,6 +33,12 @@ export default function Passos45() {
   async function handleSalvar() {
     if (!subject.trim()) {
       toast({ title: "Informe o assunto/ressentimento antes de salvar.", duration: 3000 });
+      return;
+    }
+    // 🔒 4º/5º Passo fica protegido pelo período gratuito (veja
+    // src/lib/trialGate.ts — hoje sempre liberado, até existir login).
+    if (isTrialExpired()) {
+      toast({ title: TRIAL_EXPIRED_MESSAGE, duration: 4000 });
       return;
     }
     setSalvando(true);

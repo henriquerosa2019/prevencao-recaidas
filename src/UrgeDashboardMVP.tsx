@@ -6,13 +6,13 @@ import autoTable from "jspdf-autotable";
 import { Activity, FileDown, Flame, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
+import PeriodoButtons from "@/components/PeriodoButtons";
 
 // 🎨 Dashboard redesenhado no Lovable — paleta "Aurora Recovery" (azuis e
 // violetas futuristas, vidro fosco, brilho neon). As cores usam variáveis
 // --aurora-* definidas em index.css, isoladas do design system padrão do
 // app — só esta tela e o painel lateral ganham este visual novo.
 
-const PERIODOS = ["7d", "14d", "30d"];
 const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 const TRADUCOES_GATILHOS: Record<string, string> = {
@@ -158,10 +158,193 @@ function Kpi({
   );
 }
 
+// ================= Funções puras de agregação =================
+// Extraídas para serem reaproveitadas tanto pelos KPIs/exportação (que usam
+// o período "global" do topo da página) quanto por cada painel individual,
+// que agora tem seu próprio seletor de 7/14/30 dias e sua própria fatia dos
+// dados — sem precisar buscar de novo no Supabase a cada clique.
+
+function filtrarPorPeriodo(dados: any[], periodo: string) {
+  const dias = parseInt(periodo.replace("d", ""), 10);
+  const limite = new Date();
+  limite.setDate(limite.getDate() - dias);
+  return dados.filter((d) => new Date(d.created_at) >= limite);
+}
+
+function computeParetoData(dados: any[]) {
+  const counts: Record<string, number> = {};
+  dados.forEach((d) => {
+    counts[d.trigger] = (counts[d.trigger] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .map(([gatilho, ocorrencias]) => ({
+      gatilho: TRADUCOES_GATILHOS[gatilho] || gatilho,
+      ocorrencias,
+    }))
+    .sort((a, b) => b.ocorrencias - a.ocorrencias);
+}
+
+function computeHeatmap(dados: any[]) {
+  const matriz = Array.from({ length: 7 }, () => Array(24).fill(0));
+  const contagem = Array.from({ length: 7 }, () => Array(24).fill(0));
+  const soma = Array.from({ length: 7 }, () => Array(24).fill(0));
+  const agg: HeatCellDetail[][] = Array.from({ length: 7 }, () =>
+    Array.from({ length: 24 }, () => ({} as HeatCellDetail))
+  );
+  dados.forEach((d) => {
+    const dt = new Date(d.created_at);
+    const local = new Date(dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const dia = local.getDay();
+    const hora = local.getHours();
+    soma[dia][hora] += d.intensity;
+    contagem[dia][hora]++;
+    const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
+    const cell = agg[dia][hora];
+    if (!cell[nome]) cell[nome] = { count: 0, total: 0, avg: 0 };
+    cell[nome].count += 1;
+    cell[nome].total += d.intensity;
+    cell[nome].avg = parseFloat((cell[nome].total / cell[nome].count).toFixed(1));
+  });
+  for (let i = 0; i < 7; i++) {
+    for (let j = 0; j < 24; j++) {
+      matriz[i][j] = contagem[i][j] ? soma[i][j] / contagem[i][j] : 0;
+    }
+  }
+  return { heatmapData: matriz, heatmapDetails: agg };
+}
+
+function computePorDiaSemana(dados: any[]) {
+  const porDia: Record<number, Record<string, number>> = {};
+  for (let d = 0; d < 7; d++) porDia[d] = {};
+  dados.forEach((d) => {
+    const dt = new Date(d.created_at);
+    const local = new Date(dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const dia = local.getDay();
+    const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
+    porDia[dia][nome] = (porDia[dia][nome] || 0) + 1;
+  });
+  return DIAS.map((dia, i) => {
+    const entries = Object.entries(porDia[i]).sort((a, b) => b[1] - a[1]);
+    const ocorrencias = entries.reduce((s, [, c]) => s + c, 0);
+    return { dia, ocorrencias, gatilhos: entries.map(([nome]) => nome) };
+  });
+}
+
+function computePorHorario(dados: any[]) {
+  const porHora: Record<number, Record<string, number>> = {};
+  for (let h = 0; h < 24; h++) porHora[h] = {};
+  dados.forEach((d) => {
+    const dt = new Date(d.created_at);
+    const local = new Date(dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const hora = local.getHours();
+    const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
+    porHora[hora][nome] = (porHora[hora][nome] || 0) + 1;
+  });
+  return Array.from({ length: 24 }, (_, i) => {
+    const entries = Object.entries(porHora[i]).sort((a, b) => b[1] - a[1]);
+    const ocorrencias = entries.reduce((s, [, c]) => s + c, 0);
+    return { hora: `${i}h`, ocorrencias, gatilhos: entries.map(([nome]) => nome) };
+  });
+}
+
+function computeGatilhoTemporalStats(dados: any[]) {
+  const stats: Record<string, { porDia: number[]; porHora: number[] }> = {};
+  dados.forEach((d) => {
+    const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
+    if (!stats[nome]) stats[nome] = { porDia: Array(7).fill(0), porHora: Array(24).fill(0) };
+    const dt = new Date(d.created_at);
+    const local = new Date(dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    stats[nome].porDia[local.getDay()]++;
+    stats[nome].porHora[local.getHours()]++;
+  });
+  return stats;
+}
+
+function computeTreemapData(
+  itensBase: { name: string; ocorrencias: number; gatilhos: string[] }[]
+) {
+  const itens = itensBase.filter((d) => d.ocorrencias > 0);
+  const max = Math.max(1, ...itens.map((d) => d.ocorrencias));
+  return itens.map((d) => ({
+    name: d.name,
+    value: d.ocorrencias,
+    gatilhos: d.gatilhos,
+    max,
+  }));
+}
+
+function computeTop5(
+  paretoData: { gatilho: string; ocorrencias: number }[],
+  stats: Record<string, { porDia: number[]; porHora: number[] }>
+) {
+  const top5Gatilhos = paretoData.slice(0, 5).map((p) => {
+    const s = stats[p.gatilho] || { porDia: Array(7).fill(0), porHora: Array(24).fill(0) };
+    const maxDia = Math.max(...s.porDia);
+    const maxHora = Math.max(...s.porHora);
+    return {
+      gatilho: p.gatilho,
+      ocorrencias: p.ocorrencias,
+      diaTop: maxDia > 0 ? DIAS[s.porDia.indexOf(maxDia)] : "-",
+      horaTop: maxHora > 0 ? `${s.porHora.indexOf(maxHora)}h` : "-",
+    };
+  });
+  const top5Temporal = paretoData.slice(0, 5).map((p) => {
+    const s = stats[p.gatilho] || { porDia: Array(7).fill(0), porHora: Array(24).fill(0) };
+    const dias = s.porDia
+      .map((c, i) => ({ label: DIAS[i], c }))
+      .filter((x) => x.c > 0)
+      .sort((a, b) => b.c - a.c)
+      .slice(0, 2)
+      .map((x) => `${x.label} (${x.c}x)`);
+    const horas = s.porHora
+      .map((c, i) => ({ label: `${i}h`, c }))
+      .filter((x) => x.c > 0)
+      .sort((a, b) => b.c - a.c)
+      .slice(0, 2)
+      .map((x) => `${x.label} (${x.c}x)`);
+    return {
+      gatilho: p.gatilho,
+      dias: dias.length ? dias.join(", ") : "-",
+      horas: horas.length ? horas.join(", ") : "-",
+    };
+  });
+  return { top5Gatilhos, top5Temporal };
+}
+
+function computeHorarioCritico(heatmapData: number[][]) {
+  let max = 0,
+    diaCrit = "",
+    horaCrit = "";
+  heatmapData.forEach((row, d) => {
+    row.forEach((val, h) => {
+      if (val > max) {
+        max = val;
+        diaCrit = DIAS[d];
+        horaCrit = `${h}h`;
+      }
+    });
+  });
+  return { max, diaCrit, horaCrit };
+}
+
 export default function UrgeDashboardMVP() {
   const navigate = useNavigate();
+
+  // 🕐 Período "global" — controla os KPIs do topo, a exportação em PDF e o
+  // histórico completo (drill-down). Cada painel abaixo tem o seu próprio
+  // período independente (veja os estados periodoX mais abaixo).
   const [periodo, setPeriodo] = useState("7d");
-  const [data, setData] = useState<any[]>([]);
+  const [periodoGatilhos, setPeriodoGatilhos] = useState("7d");
+  const [periodoDiaSemana, setPeriodoDiaSemana] = useState("7d");
+  const [periodoHorario, setPeriodoHorario] = useState("7d");
+  const [periodoHeatmap, setPeriodoHeatmap] = useState("7d");
+  const [periodoTop5, setPeriodoTop5] = useState("7d");
+  const [periodoCritico, setPeriodoCritico] = useState("7d");
+
+  // 📦 Sempre buscamos os últimos 30 dias uma única vez — cada painel (e o
+  // KPI do topo) filtra sua própria fatia a partir daqui, sem nova ida ao
+  // banco a cada clique de período.
+  const [data30, setData30] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showHistorico, setShowHistorico] = useState(false);
   const [sobrietyDate, setSobrietyDate] = useState<string | null>(null);
@@ -180,7 +363,7 @@ export default function UrgeDashboardMVP() {
 
   useEffect(() => {
     fetchData();
-  }, [periodo]);
+  }, []);
 
   // 🏆 Contador de sobriedade + plano de prevenção (para o resumo/PDF)
   useEffect(() => {
@@ -212,9 +395,8 @@ export default function UrgeDashboardMVP() {
 
   async function fetchData() {
     setLoading(true);
-    const dias = parseInt(periodo.replace("d", ""));
     const dataInicio = new Date();
-    dataInicio.setDate(dataInicio.getDate() - dias);
+    dataInicio.setDate(dataInicio.getDate() - 30);
 
     const { data, error } = await supabase
       .from("urge_events")
@@ -223,34 +405,99 @@ export default function UrgeDashboardMVP() {
       .order("created_at", { ascending: true });
 
     if (error) console.error("Erro ao buscar dados:", error);
-    else setData(data || []);
+    else setData30(data || []);
     setLoading(false);
   }
 
-  const paretoData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    data.forEach((d) => {
-      counts[d.trigger] = (counts[d.trigger] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .map(([gatilho, ocorrencias]) => ({
-        gatilho: TRADUCOES_GATILHOS[gatilho] || gatilho,
-        ocorrencias,
-      }))
-      .sort((a, b) => b.ocorrencias - a.ocorrencias);
-  }, [data]);
+  // ============ Dados do período "global" (KPIs, PDF, histórico) ============
+  const data = useMemo(() => filtrarPorPeriodo(data30, periodo), [data30, periodo]);
 
+  const paretoData = useMemo(() => computeParetoData(data), [data]);
   const maxParetoValue = Math.max(1, ...paretoData.map((p) => p.ocorrencias));
 
-  // 🎨 Gradiente azul → violeta → magenta pela intensidade relativa da célula
-  // (contagem / máximo). Usado no mapa de árvore.
-  const getBarColor = (count: number, max: number) => {
-    const ratio = Math.min(1, count / (max || 1));
-    return `oklch(${(0.34 + ratio * 0.3).toFixed(3)} ${(0.09 + ratio * 0.14).toFixed(3)} ${(
-      268 +
-      ratio * 45
-    ).toFixed(1)})`;
-  };
+  const intensidadeMedia = useMemo(
+    () =>
+      data.length
+        ? (data.reduce((s, d) => s + (d.intensity || 0), 0) / data.length).toFixed(1)
+        : "—",
+    [data]
+  );
+
+  const heatmapGlobal = useMemo(() => computeHeatmap(data), [data]);
+  const horarioCritico = useMemo(
+    () => computeHorarioCritico(heatmapGlobal.heatmapData),
+    [heatmapGlobal]
+  );
+
+  // Total real dos últimos 30 dias — independe do período selecionado em
+  // qualquer painel, já que data30 sempre contém a janela completa.
+  const totalRegistros30d = data30.length;
+
+  // ============ Painel "Gatilhos" (período próprio) ============
+  const dataGatilhosPanel = useMemo(
+    () => filtrarPorPeriodo(data30, periodoGatilhos),
+    [data30, periodoGatilhos]
+  );
+  const paretoDataGatilhos = useMemo(() => computeParetoData(dataGatilhosPanel), [dataGatilhosPanel]);
+  const maxParetoValueGatilhos = Math.max(1, ...paretoDataGatilhos.map((p) => p.ocorrencias));
+
+  // ============ Painel "Por Dia da Semana" (período próprio) ============
+  const dataDiaSemanaPanel = useMemo(
+    () => filtrarPorPeriodo(data30, periodoDiaSemana),
+    [data30, periodoDiaSemana]
+  );
+  const porDiaSemanaPanel = useMemo(() => computePorDiaSemana(dataDiaSemanaPanel), [dataDiaSemanaPanel]);
+  const diaTreemapData = useMemo(
+    () =>
+      computeTreemapData(
+        porDiaSemanaPanel.map((d) => ({ name: d.dia, ocorrencias: d.ocorrencias, gatilhos: d.gatilhos }))
+      ),
+    [porDiaSemanaPanel]
+  );
+
+  // ============ Painel "Por Horário" (período próprio) ============
+  const dataHorarioPanel = useMemo(
+    () => filtrarPorPeriodo(data30, periodoHorario),
+    [data30, periodoHorario]
+  );
+  const porHorarioPanel = useMemo(() => computePorHorario(dataHorarioPanel), [dataHorarioPanel]);
+  const horaTreemapData = useMemo(
+    () =>
+      computeTreemapData(
+        porHorarioPanel.map((h) => ({ name: h.hora, ocorrencias: h.ocorrencias, gatilhos: h.gatilhos }))
+      ),
+    [porHorarioPanel]
+  );
+
+  // ============ Painel "Mapa de Calor" (período próprio) ============
+  const dataHeatmapPanel = useMemo(
+    () => filtrarPorPeriodo(data30, periodoHeatmap),
+    [data30, periodoHeatmap]
+  );
+  const heatmapPanel = useMemo(() => computeHeatmap(dataHeatmapPanel), [dataHeatmapPanel]);
+  const heatmapDataPanel = heatmapPanel.heatmapData;
+  const heatmapDetailsPanel = heatmapPanel.heatmapDetails;
+
+  // ============ Painel "Gatilho Mais Comum — Top 5" (período próprio) ============
+  const dataTop5Panel = useMemo(() => filtrarPorPeriodo(data30, periodoTop5), [data30, periodoTop5]);
+  const paretoDataTop5 = useMemo(() => computeParetoData(dataTop5Panel), [dataTop5Panel]);
+  const statsTop5 = useMemo(() => computeGatilhoTemporalStats(dataTop5Panel), [dataTop5Panel]);
+  const top5Gatilhos = useMemo(
+    () => computeTop5(paretoDataTop5, statsTop5).top5Gatilhos,
+    [paretoDataTop5, statsTop5]
+  );
+
+  // ============ Painel "Horário Crítico — Top 5" (período próprio) ============
+  const dataCriticoPanel = useMemo(
+    () => filtrarPorPeriodo(data30, periodoCritico),
+    [data30, periodoCritico]
+  );
+  const paretoDataCritico = useMemo(() => computeParetoData(dataCriticoPanel), [dataCriticoPanel]);
+  const statsCritico = useMemo(() => computeGatilhoTemporalStats(dataCriticoPanel), [dataCriticoPanel]);
+  const top5Temporal = useMemo(
+    () => computeTop5(paretoDataCritico, statsCritico).top5Temporal,
+    [paretoDataCritico, statsCritico]
+  );
 
   // 🎨 Gradiente do mapa de calor pela intensidade média (0–10) — do quase
   // transparente (sem dados) ao magenta vibrante (mais crítico).
@@ -263,209 +510,6 @@ export default function UrgeDashboardMVP() {
     if (v < 9) return "oklch(0.66 0.25 330)";
     return "oklch(0.72 0.24 348)";
   };
-
-  const intensidadeMedia = useMemo(
-    () =>
-      data.length
-        ? (data.reduce((s, d) => s + (d.intensity || 0), 0) / data.length).toFixed(1)
-        : "—",
-    [data]
-  );
-
-  const heatmapData = useMemo(() => {
-    const matriz = Array.from({ length: 7 }, () => Array(24).fill(0));
-    const contagem = Array.from({ length: 7 }, () => Array(24).fill(0));
-    const soma = Array.from({ length: 7 }, () => Array(24).fill(0));
-    data.forEach((d) => {
-      const dt = new Date(d.created_at);
-      const local = new Date(
-        dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-      );
-      const dia = local.getDay();
-      const hora = local.getHours();
-      soma[dia][hora] += d.intensity;
-      contagem[dia][hora]++;
-    });
-    for (let i = 0; i < 7; i++) {
-      for (let j = 0; j < 24; j++) {
-        matriz[i][j] = contagem[i][j] ? soma[i][j] / contagem[i][j] : 0;
-      }
-    }
-    return matriz;
-  }, [data]);
-
-  const heatmapDetails = useMemo(() => {
-    const agg: HeatCellDetail[][] = Array.from({ length: 7 }, () =>
-      Array.from({ length: 24 }, () => ({} as HeatCellDetail))
-    );
-    data.forEach((d) => {
-      const dt = new Date(d.created_at);
-      const local = new Date(
-        dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-      );
-      const dia = local.getDay();
-      const hora = local.getHours();
-      const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
-      const cell = agg[dia][hora];
-      if (!cell[nome]) cell[nome] = { count: 0, total: 0, avg: 0 };
-      cell[nome].count += 1;
-      cell[nome].total += d.intensity;
-      cell[nome].avg = parseFloat((cell[nome].total / cell[nome].count).toFixed(1));
-    });
-    return agg;
-  }, [data]);
-
-  const totalRegistros30d = useMemo(() => {
-    const limite = new Date();
-    limite.setDate(limite.getDate() - 30);
-    return data.filter((d) => new Date(d.created_at) >= limite).length;
-  }, [data]);
-
-  // 📅 Recorrência por dia da semana (com lista de gatilhos distintos por dia)
-  const porDiaSemana = useMemo(() => {
-    const porDia: Record<number, Record<string, number>> = {};
-    for (let d = 0; d < 7; d++) porDia[d] = {};
-    data.forEach((d) => {
-      const dt = new Date(d.created_at);
-      const local = new Date(
-        dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-      );
-      const dia = local.getDay();
-      const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
-      porDia[dia][nome] = (porDia[dia][nome] || 0) + 1;
-    });
-    return DIAS.map((dia, i) => {
-      const entries = Object.entries(porDia[i]).sort((a, b) => b[1] - a[1]);
-      const ocorrencias = entries.reduce((s, [, c]) => s + c, 0);
-      return { dia, ocorrencias, gatilhos: entries.map(([nome]) => nome) };
-    });
-  }, [data]);
-
-  // 🕐 Recorrência por horário do dia (com lista de gatilhos distintos por hora)
-  const porHorario = useMemo(() => {
-    const porHora: Record<number, Record<string, number>> = {};
-    for (let h = 0; h < 24; h++) porHora[h] = {};
-    data.forEach((d) => {
-      const dt = new Date(d.created_at);
-      const local = new Date(
-        dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-      );
-      const hora = local.getHours();
-      const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
-      porHora[hora][nome] = (porHora[hora][nome] || 0) + 1;
-    });
-    return Array.from({ length: 24 }, (_, i) => {
-      const entries = Object.entries(porHora[i]).sort((a, b) => b[1] - a[1]);
-      const ocorrencias = entries.reduce((s, [, c]) => s + c, 0);
-      return {
-        hora: `${i}h`,
-        ocorrencias,
-        gatilhos: entries.map(([nome]) => nome),
-      };
-    });
-  }, [data]);
-
-  // 🌳 Dados do mapa de árvore "Por Dia da Semana" (só dias com registros)
-  const diaTreemapData = useMemo(() => {
-    const itens = porDiaSemana.filter((d) => d.ocorrencias > 0);
-    const max = Math.max(1, ...itens.map((d) => d.ocorrencias));
-    return itens.map((d) => ({
-      name: d.dia,
-      value: d.ocorrencias,
-      gatilhos: d.gatilhos,
-      max,
-    }));
-  }, [porDiaSemana]);
-
-  // 🌳 Dados do mapa de árvore "Por Horário" (só horários com registros)
-  const horaTreemapData = useMemo(() => {
-    const itens = porHorario.filter((h) => h.ocorrencias > 0);
-    const max = Math.max(1, ...itens.map((h) => h.ocorrencias));
-    return itens.map((h) => ({
-      name: h.hora,
-      value: h.ocorrencias,
-      gatilhos: h.gatilhos,
-      max,
-    }));
-  }, [porHorario]);
-
-  // 🧮 Estatísticas temporais por gatilho (para os Top 5)
-  const gatilhoTemporalStats = useMemo(() => {
-    const stats: Record<string, { porDia: number[]; porHora: number[] }> = {};
-    data.forEach((d) => {
-      const nome = TRADUCOES_GATILHOS[d.trigger] || d.trigger;
-      if (!stats[nome])
-        stats[nome] = { porDia: Array(7).fill(0), porHora: Array(24).fill(0) };
-      const dt = new Date(d.created_at);
-      const local = new Date(
-        dt.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-      );
-      stats[nome].porDia[local.getDay()]++;
-      stats[nome].porHora[local.getHours()]++;
-    });
-    return stats;
-  }, [data]);
-
-  // 🏆 Top 5 gatilhos: ocorrências + dia/horário mais frequente de cada um
-  const top5Gatilhos = useMemo(() => {
-    return paretoData.slice(0, 5).map((p) => {
-      const s = gatilhoTemporalStats[p.gatilho] || {
-        porDia: Array(7).fill(0),
-        porHora: Array(24).fill(0),
-      };
-      const maxDia = Math.max(...s.porDia);
-      const maxHora = Math.max(...s.porHora);
-      return {
-        gatilho: p.gatilho,
-        ocorrencias: p.ocorrencias,
-        diaTop: maxDia > 0 ? DIAS[s.porDia.indexOf(maxDia)] : "-",
-        horaTop: maxHora > 0 ? `${s.porHora.indexOf(maxHora)}h` : "-",
-      };
-    });
-  }, [paretoData, gatilhoTemporalStats]);
-
-  // ⏰ Horário Crítico dos Top 5: 2 dias e 2 horários mais frequentes de cada gatilho
-  const top5Temporal = useMemo(() => {
-    return paretoData.slice(0, 5).map((p) => {
-      const s = gatilhoTemporalStats[p.gatilho] || {
-        porDia: Array(7).fill(0),
-        porHora: Array(24).fill(0),
-      };
-      const dias = s.porDia
-        .map((c, i) => ({ label: DIAS[i], c }))
-        .filter((x) => x.c > 0)
-        .sort((a, b) => b.c - a.c)
-        .slice(0, 2)
-        .map((x) => `${x.label} (${x.c}x)`);
-      const horas = s.porHora
-        .map((c, i) => ({ label: `${i}h`, c }))
-        .filter((x) => x.c > 0)
-        .sort((a, b) => b.c - a.c)
-        .slice(0, 2)
-        .map((x) => `${x.label} (${x.c}x)`);
-      return {
-        gatilho: p.gatilho,
-        dias: dias.length ? dias.join(", ") : "-",
-        horas: horas.length ? horas.join(", ") : "-",
-      };
-    });
-  }, [paretoData, gatilhoTemporalStats]);
-
-  const horarioCritico = useMemo(() => {
-    let max = 0,
-      diaCrit = "",
-      horaCrit = "";
-    heatmapData.forEach((row, d) => {
-      row.forEach((val, h) => {
-        if (val > max) {
-          max = val;
-          diaCrit = DIAS[d];
-          horaCrit = `${h}h`;
-        }
-      });
-    });
-    return { max, diaCrit, horaCrit };
-  }, [heatmapData]);
 
   // Estimativa simples de largura de um texto em px, para decidir se cabe numa célula
   // sem precisar medir o DOM — evita texto vazando para fora da célula em telas estreitas.
@@ -685,27 +729,7 @@ export default function UrgeDashboardMVP() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="aurora-glass flex gap-1 rounded-full p-1">
-              {PERIODOS.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriodo(p)}
-                  className="rounded-full px-4 py-1.5 text-sm transition-all"
-                  style={
-                    periodo === p
-                      ? {
-                          backgroundImage: "var(--aurora-gradient)",
-                          color: "var(--aurora-primary-foreground)",
-                          boxShadow: "var(--aurora-shadow-glow-strong)",
-                          textShadow: "var(--aurora-text-glow-soft)",
-                        }
-                      : { color: "var(--aurora-muted-foreground)" }
-                  }
-                >
-                  {p.replace("d", " dias")}
-                </button>
-              ))}
-            </div>
+            <PeriodoButtons value={periodo} onChange={setPeriodo} size="md" />
             <button
               onClick={exportarPDF}
               className="aurora-glass flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-colors hover:brightness-125"
@@ -866,20 +890,25 @@ export default function UrgeDashboardMVP() {
               />
             </div>
 
-            {/* 📊 Gatilhos — mesmo layout de ranking do Histórico de Gatilhos */}
+            {/* 📊 Gatilhos — mesmo layout de ranking do Histórico de Gatilhos, com
+                período próprio (7/14/30 dias) */}
             <Panel
-              title={`Gatilhos (${periodo})`}
-              subtitle={`${data.length} registros no período`}
+              title={`Gatilhos (${periodoGatilhos})`}
+              subtitle={`${dataGatilhosPanel.length} registros no período`}
               footer="Clique para ver o histórico completo de registros"
-              onClick={() => setShowHistorico(true)}
+              onClick={() => {
+                setPeriodo(periodoGatilhos);
+                setShowHistorico(true);
+              }}
+              right={<PeriodoButtons value={periodoGatilhos} onChange={setPeriodoGatilhos} />}
             >
-              {paretoData.length === 0 ? (
+              {paretoDataGatilhos.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
                   Sem registros no período selecionado.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {paretoData.map((r, i) => (
+                  {paretoDataGatilhos.map((r, i) => (
                     <div key={r.gatilho} className="flex items-center gap-3">
                       <span className="text-xs w-5" style={{ color: "var(--aurora-muted-foreground)" }}>
                         {i + 1}
@@ -901,7 +930,7 @@ export default function UrgeDashboardMVP() {
                         <div
                           className="h-3 rounded-full"
                           style={{
-                            width: `${Math.max(4, (r.ocorrencias / maxParetoValue) * 100)}%`,
+                            width: `${Math.max(4, (r.ocorrencias / maxParetoValueGatilhos) * 100)}%`,
                             backgroundColor: corGatilho(r.gatilho),
                           }}
                         />
@@ -920,9 +949,10 @@ export default function UrgeDashboardMVP() {
 
             {/* 📅 Recorrência por Dia da Semana — Mapa de Árvore */}
             <Panel
-              title={`Por Dia da Semana (${periodo})`}
-              subtitle={`${data.length} registros no período`}
+              title={`Por Dia da Semana (${periodoDiaSemana})`}
+              subtitle={`${dataDiaSemanaPanel.length} registros no período`}
               footer="O tamanho de cada célula é proporcional ao número de registros do dia."
+              right={<PeriodoButtons value={periodoDiaSemana} onChange={setPeriodoDiaSemana} />}
             >
               <div className="h-[420px] md:h-[520px]">
                 {diaTreemapData.length === 0 ? (
@@ -948,9 +978,10 @@ export default function UrgeDashboardMVP() {
 
             {/* 🕐 Recorrência por Horário — Mapa de Árvore */}
             <Panel
-              title={`Por Horário (${periodo})`}
-              subtitle={`${data.length} registros no período`}
+              title={`Por Horário (${periodoHorario})`}
+              subtitle={`${dataHorarioPanel.length} registros no período`}
               footer="O tamanho de cada célula é proporcional ao número de registros do horário."
+              right={<PeriodoButtons value={periodoHorario} onChange={setPeriodoHorario} />}
             >
               <div className="h-[420px] md:h-[520px]">
                 {horaTreemapData.length === 0 ? (
@@ -976,8 +1007,9 @@ export default function UrgeDashboardMVP() {
 
             {/* 🔥 Heatmap com mini-Pareto no hover */}
             <Panel
-              title={`Mapa de Calor de Desejos (${periodo})`}
-              subtitle={`${data.length} registros no período — passe o mouse para o mini-Pareto`}
+              title={`Mapa de Calor de Desejos (${periodoHeatmap})`}
+              subtitle={`${dataHeatmapPanel.length} registros no período — passe o mouse para o mini-Pareto`}
+              right={<PeriodoButtons value={periodoHeatmap} onChange={setPeriodoHeatmap} />}
             >
               <div className="overflow-x-auto">
                 <div className="min-w-[860px] relative" ref={heatmapWrapRef}>
@@ -992,7 +1024,7 @@ export default function UrgeDashboardMVP() {
                         {i}
                       </div>
                     ))}
-                    {heatmapData.map((row, rIdx) => (
+                    {heatmapDataPanel.map((row, rIdx) => (
                       <React.Fragment key={`r-${rIdx}`}>
                         <div
                           className="text-[11px] h-[30px] flex items-center font-medium"
@@ -1003,7 +1035,7 @@ export default function UrgeDashboardMVP() {
                         {row.map((v, cIdx) => {
                           const bg = getHeatColor(v);
 
-                          const cellAggCor = heatmapDetails[rIdx][cIdx];
+                          const cellAggCor = heatmapDetailsPanel[rIdx][cIdx];
                           const dominanteEntry = Object.entries(cellAggCor).sort(
                             (a, b) =>
                               a[1].count === b[1].count
@@ -1013,7 +1045,7 @@ export default function UrgeDashboardMVP() {
                           const nomeDominante = dominanteEntry?.[0];
 
                           const onEnter: React.MouseEventHandler<HTMLDivElement> = (e) => {
-                            const cellAgg = heatmapDetails[rIdx][cIdx];
+                            const cellAgg = heatmapDetailsPanel[rIdx][cIdx];
                             const rows: ParetoRow[] = Object.entries(cellAgg)
                               .map(([nome, v]) => ({
                                 nome,
@@ -1172,7 +1204,10 @@ export default function UrgeDashboardMVP() {
             </Panel>
 
             {/* 🏆 Top 5 — Gatilho Mais Comum */}
-            <Panel title={`Gatilho Mais Comum — Top 5 (${periodo})`}>
+            <Panel
+              title={`Gatilho Mais Comum — Top 5 (${periodoTop5})`}
+              right={<PeriodoButtons value={periodoTop5} onChange={setPeriodoTop5} />}
+            >
               {top5Gatilhos.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
                   Aguardando dados
@@ -1226,7 +1261,10 @@ export default function UrgeDashboardMVP() {
             </Panel>
 
             {/* ⏰ Horário Crítico dos Top 5 */}
-            <Panel title={`Horário Crítico — Top 5 (${periodo})`}>
+            <Panel
+              title={`Horário Crítico — Top 5 (${periodoCritico})`}
+              right={<PeriodoButtons value={periodoCritico} onChange={setPeriodoCritico} />}
+            >
               {top5Temporal.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
                   Aguardando dados

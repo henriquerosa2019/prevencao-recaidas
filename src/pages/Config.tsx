@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { isTrialExpired, TRIAL_EXPIRED_MESSAGE } from "@/lib/trialGate";
 
 export default function Config() {
   const [periodo, setPeriodo] = useState("7d");
@@ -95,6 +96,12 @@ export default function Config() {
 
   // 🔹 Salvar ou atualizar configuração
   async function handleSalvar() {
+    // 🔒 Plano de Prevenção fica protegido pelo período gratuito (veja
+    // src/lib/trialGate.ts — hoje sempre liberado, até existir login).
+    if (isTrialExpired()) {
+      toast({ title: TRIAL_EXPIRED_MESSAGE, duration: 4000 });
+      return;
+    }
     setSalvando(true);
     setSalvo(false);
     try {
