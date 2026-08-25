@@ -169,7 +169,7 @@ function Kpi({
 
 export default function UrgeDashboardMVP() {
   const navigate = useNavigate();
-  const [periodo, setPeriodo] = useState("14d");
+  const [periodo, setPeriodo] = useState("7d");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showHistorico, setShowHistorico] = useState(false);
@@ -906,9 +906,11 @@ export default function UrgeDashboardMVP() {
                         background: "oklch(0.22 0.06 276 / 95%)",
                         border: "1px solid oklch(0.72 0.09 280 / 25%)",
                         borderRadius: 14,
-                        color: "oklch(0.97 0.01 280)",
+                        color: "oklch(0.98 0.01 280)",
                         boxShadow: "0 20px 50px -20px rgba(0,0,0,.8)",
                       }}
+                      labelStyle={{ color: "oklch(0.98 0.01 280)", fontWeight: 600 }}
+                      itemStyle={{ color: "oklch(0.98 0.01 280)" }}
                     />
                     <Bar dataKey="ocorrencias" radius={[8, 8, 0, 0]} name="Ocorrências">
                       {paretoData.map((entry, i) => (
@@ -1046,11 +1048,14 @@ export default function UrgeDashboardMVP() {
                             >
                               {nomeDominante && (
                                 <span
-                                  className="aurora-text-glow-soft"
+                                  className={v <= 8 ? "aurora-text-glow-soft" : undefined}
                                   style={{
                                     fontSize: "10px",
                                     fontWeight: 700,
-                                    color: corGatilho(nomeDominante),
+                                    // 🎨 Contraste garantido pela intensidade da célula (não mais
+                                    // pela cor categórica do gatilho): branco até 8, azul escuro
+                                    // a partir de 9 — onde o fundo do mapa de calor fica claro/rosa.
+                                    color: v <= 8 ? "oklch(0.98 0.01 280)" : "oklch(0.28 0.12 260)",
                                   }}
                                 >
                                   {abrevGatilho(nomeDominante)}

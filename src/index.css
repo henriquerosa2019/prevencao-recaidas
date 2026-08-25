@@ -14,29 +14,40 @@ All colors MUST be HSL.
      automaticamente os azuis/violetas futuristas. Os valores usam oklch()
      diretamente (ver tailwind.config.ts, que referencia var(--x) sem hsl()). */
   :root {
-    --background: oklch(0.16 0.045 274);
-    --foreground: oklch(0.97 0.012 280);
+    /* 🔧 Nota técnica: estes tokens usam a sintaxe "L C H" crua (sem o
+       envelope oklch(...) e sem alfa embutido) de propósito — é o que
+       permite ao Tailwind aplicar modificadores de opacidade como
+       bg-secondary/60, bg-card/80, text-foreground/50 etc. (ver
+       tailwind.config.ts, que envolve cada um em
+       "oklch(var(--x) / <alpha-value>)"). Sem essa separação, qualquer
+       classe com sufixo /NN nessas cores não gerava CSS nenhum e o campo
+       ficava sem estilo algum — era isso que causava os campos de
+       formulário brancos com texto invisível. --border/--input/--ring
+       continuam com alfa embutido porque são usados sempre "crus", sem
+       modificador, em todo o app. */
+    --background: 0.16 0.045 274;
+    --foreground: 0.97 0.012 280;
 
-    --card: oklch(0.22 0.055 275 / 65%);
-    --card-foreground: oklch(0.97 0.012 280);
+    --card: 0.22 0.055 275;
+    --card-foreground: 0.97 0.012 280;
 
-    --popover: oklch(0.2 0.05 275);
-    --popover-foreground: oklch(0.97 0.012 280);
+    --popover: 0.2 0.05 275;
+    --popover-foreground: 0.97 0.012 280;
 
-    --primary: oklch(0.62 0.22 285);
-    --primary-foreground: oklch(0.98 0.01 280);
+    --primary: 0.62 0.22 285;
+    --primary-foreground: 0.98 0.01 280;
 
-    --secondary: oklch(0.3 0.07 272);
-    --secondary-foreground: oklch(0.97 0.012 280);
+    --secondary: 0.3 0.07 272;
+    --secondary-foreground: 0.97 0.012 280;
 
-    --muted: oklch(0.28 0.055 272);
-    --muted-foreground: oklch(0.76 0.045 278);
+    --muted: 0.28 0.055 272;
+    --muted-foreground: 0.76 0.045 278;
 
-    --accent: oklch(0.65 0.19 245);
-    --accent-foreground: oklch(0.98 0.01 280);
+    --accent: 0.65 0.19 245;
+    --accent-foreground: 0.98 0.01 280;
 
-    --destructive: oklch(0.62 0.24 25);
-    --destructive-foreground: oklch(0.98 0.01 280);
+    --destructive: 0.62 0.24 25;
+    --destructive-foreground: 0.98 0.01 280;
 
     --border: oklch(0.72 0.09 280 / 18%);
     --input: oklch(0.72 0.09 280 / 22%);
@@ -44,14 +55,14 @@ All colors MUST be HSL.
 
     --radius: 1rem;
 
-    --success: oklch(0.7 0.17 150);
-    --success-foreground: oklch(0.15 0.03 150);
+    --success: 0.7 0.17 150;
+    --success-foreground: 0.15 0.03 150;
 
-    --warning: oklch(0.75 0.15 85);
-    --warning-foreground: oklch(0.2 0.05 85);
+    --warning: 0.75 0.15 85;
+    --warning-foreground: 0.2 0.05 85;
 
-    --info: oklch(0.78 0.15 205);
-    --info-foreground: oklch(0.15 0.03 205);
+    --info: 0.78 0.15 205;
+    --info-foreground: 0.15 0.03 205;
 
     --violet: oklch(0.66 0.22 300);
     --cyan: oklch(0.78 0.15 205);

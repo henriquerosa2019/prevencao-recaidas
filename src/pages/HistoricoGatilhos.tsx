@@ -41,6 +41,7 @@ export default function HistoricoGatilhos() {
   const [loading, setLoading] = useState(false);
   const [filtroTag, setFiltroTag] = useState("todos");
   const [filtroDia, setFiltroDia] = useState("todos");
+  const [filtroIntensidade, setFiltroIntensidade] = useState("todos");
 
   useEffect(() => {
     fetchData();
@@ -82,9 +83,10 @@ export default function HistoricoGatilhos() {
     return enriquecidos.filter((d) => {
       if (filtroTag !== "todos" && d.gatilho !== filtroTag) return false;
       if (filtroDia !== "todos" && d.diaSemana !== Number(filtroDia)) return false;
+      if (filtroIntensidade !== "todos" && d.intensity !== Number(filtroIntensidade)) return false;
       return true;
     });
-  }, [enriquecidos, filtroTag, filtroDia]);
+  }, [enriquecidos, filtroTag, filtroDia, filtroIntensidade]);
 
   // 📊 Ranking de gatilhos (sempre do maior para o menor número de ocorrências)
   const ranking = useMemo(() => {
@@ -116,7 +118,7 @@ export default function HistoricoGatilhos() {
       {/* 🎛️ Filtros */}
       <div className="aurora-glass rounded-3xl p-4 flex flex-wrap gap-4 items-end">
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1">Tag</label>
+          <label className="block text-xs font-semibold mb-1 text-accent">Tag</label>
           <select
             value={filtroTag}
             onChange={(e) => setFiltroTag(e.target.value)}
@@ -132,7 +134,7 @@ export default function HistoricoGatilhos() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1">Dia</label>
+          <label className="block text-xs font-semibold mb-1 text-accent">Dia</label>
           <select
             value={filtroDia}
             onChange={(e) => setFiltroDia(e.target.value)}
@@ -147,11 +149,28 @@ export default function HistoricoGatilhos() {
           </select>
         </div>
 
-        {(filtroTag !== "todos" || filtroDia !== "todos") && (
+        <div>
+          <label className="block text-xs font-semibold mb-1 text-accent">Intensidade</label>
+          <select
+            value={filtroIntensidade}
+            onChange={(e) => setFiltroIntensidade(e.target.value)}
+            className="rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground min-w-[160px] focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="todos">Todas as intensidades</option>
+            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {(filtroTag !== "todos" || filtroDia !== "todos" || filtroIntensidade !== "todos") && (
           <button
             onClick={() => {
               setFiltroTag("todos");
               setFiltroDia("todos");
+              setFiltroIntensidade("todos");
             }}
             className="aurora-glass rounded-lg px-3 py-2 text-sm hover:brightness-125 transition"
           >

@@ -14,53 +14,58 @@ export default {
     },
     extend: {
       colors: {
-        // 🎨 Paleta "Aurora Recovery" — os valores em --tokens agora usam
-        // oklch() diretamente (não hsl()), por isso as classes Tailwind
-        // referenciam a variável crua (sem envolver em hsl()).
+        // 🎨 Paleta "Aurora Recovery" — os valores em --tokens usam oklch()
+        // com os canais "L C H" crus (sem alfa embutido), por isso aqui cada
+        // cor é envolvida em "oklch(var(--x) / <alpha-value>)": isso é o que
+        // faz o Tailwind conseguir gerar modificadores de opacidade como
+        // bg-secondary/60, bg-card/80, text-foreground/50 etc. Sem o
+        // <alpha-value>, essas classes com sufixo /NN não geram CSS nenhum.
+        // border/input/ring ficam de fora de propósito: já trazem alfa fixo
+        // embutido na própria variável (usadas sempre sem modificador).
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        background: "oklch(var(--background) / <alpha-value>)",
+        foreground: "oklch(var(--foreground) / <alpha-value>)",
         primary: {
-          DEFAULT: "var(--primary)",
-          foreground: "var(--primary-foreground)",
+          DEFAULT: "oklch(var(--primary) / <alpha-value>)",
+          foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
         },
         secondary: {
-          DEFAULT: "var(--secondary)",
-          foreground: "var(--secondary-foreground)",
+          DEFAULT: "oklch(var(--secondary) / <alpha-value>)",
+          foreground: "oklch(var(--secondary-foreground) / <alpha-value>)",
         },
         destructive: {
-          DEFAULT: "var(--destructive)",
-          foreground: "var(--destructive-foreground)",
+          DEFAULT: "oklch(var(--destructive) / <alpha-value>)",
+          foreground: "oklch(var(--destructive-foreground) / <alpha-value>)",
         },
         muted: {
-          DEFAULT: "var(--muted)",
-          foreground: "var(--muted-foreground)",
+          DEFAULT: "oklch(var(--muted) / <alpha-value>)",
+          foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
         },
         accent: {
-          DEFAULT: "var(--accent)",
-          foreground: "var(--accent-foreground)",
+          DEFAULT: "oklch(var(--accent) / <alpha-value>)",
+          foreground: "oklch(var(--accent-foreground) / <alpha-value>)",
         },
         popover: {
-          DEFAULT: "var(--popover)",
-          foreground: "var(--popover-foreground)",
+          DEFAULT: "oklch(var(--popover) / <alpha-value>)",
+          foreground: "oklch(var(--popover-foreground) / <alpha-value>)",
         },
         card: {
-          DEFAULT: "var(--card)",
-          foreground: "var(--card-foreground)",
+          DEFAULT: "oklch(var(--card) / <alpha-value>)",
+          foreground: "oklch(var(--card-foreground) / <alpha-value>)",
         },
         success: {
-          DEFAULT: "var(--success)",
-          foreground: "var(--success-foreground)",
+          DEFAULT: "oklch(var(--success) / <alpha-value>)",
+          foreground: "oklch(var(--success-foreground) / <alpha-value>)",
         },
         warning: {
-          DEFAULT: "var(--warning)",
-          foreground: "var(--warning-foreground)",
+          DEFAULT: "oklch(var(--warning) / <alpha-value>)",
+          foreground: "oklch(var(--warning-foreground) / <alpha-value>)",
         },
         info: {
-          DEFAULT: "var(--info)",
-          foreground: "var(--info-foreground)",
+          DEFAULT: "oklch(var(--info) / <alpha-value>)",
+          foreground: "oklch(var(--info-foreground) / <alpha-value>)",
         },
         sidebar: {
           DEFAULT: "var(--sidebar-background)",
