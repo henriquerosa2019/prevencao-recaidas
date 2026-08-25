@@ -13,12 +13,13 @@ import { useToast } from "@/hooks/use-toast";
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [modo, setModo] = useState<"login" | "cadastro">("login");
+  const [modo, setModo] = useState<"login" | "cadastro" | "recuperar">("login");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [avisoConfirmacao, setAvisoConfirmacao] = useState(false);
+  const [avisoRecuperacao, setAvisoRecuperacao] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
 
@@ -76,6 +77,30 @@ export default function Login() {
     }
   }
 
+  async function handleRecuperar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast({ title: "Digite seu e-mail.", duration: 3000 });
+      return;
+    }
+    setEnviando(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/`,
+      });
+      if (error) throw error;
+      setAvisoRecuperacao(true);
+    } catch (err: any) {
+      toast({
+        title: "Ops",
+        description: err?.message || "Não foi possível enviar o link. Tente novamente.",
+        duration: 5000,
+      });
+    } finally {
+      setEnviando(false);
+    }
+  }
+
   return (
     <div className="aurora-shell aurora-grid-noise flex min-h-screen items-center justify-center p-4">
       <div className="aurora-glass-strong w-full max-w-sm rounded-3xl p-6 md:p-8">
@@ -90,7 +115,11 @@ export default function Login() {
             Prevenção de Recaídas
           </h1>
           <p className="mt-1 text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
-            {modo === "login" ? "Entre na sua conta" : "Crie sua conta gratuita"}
+            {modo === "login"
+              ? "Entre na sua conta"
+              : modo === "cadastro"
+              ? "Crie sua conta gratuita"
+              : "Recuperar senha"}
           </p>
         </div>
 
@@ -115,6 +144,56 @@ export default function Login() {
               </button>
             </div>
           </div>
+        ) : avisoRecuperacao ? (
+          <div
+            className="rounded-2xl p-4 text-center text-sm"
+            style={{ border: "1px solid var(--aurora-border)", color: "var(--aurora-foreground)" }}
+          >
+            Enviamos um link de redefinição de senha para <strong>{email}</strong>. Abra seu e-mail,
+            clique no link e escolha uma nova senha.
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setAvisoRecuperacao(false);
+                  setModo("login");
+                }}
+                className="text-sm font-medium underline"
+                style={{ color: "var(--aurora-primary)" }}
+              >
+                Voltar para o login
+              </button>
+            </div>
+          </div>
+        ) : modo === "recuperar" ? (
+          <form onSubmit={handleRecuperar} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-foreground">E-mail</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="voce@exemplo.com"
+                className="w-full rounded-lg border border-border bg-secondary/60 p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <Button type="submit" disabled={enviando} className="w-full py-2.5 rounded-lg font-semibold">
+              {enviando ? "Aguarde..." : "Enviar link de redefinição"}
+            </Button>
+
+            <div className="text-center text-sm">
+              <button
+                type="button"
+                onClick={() => setModo("login")}
+                className="font-medium underline"
+                style={{ color: "var(--aurora-primary)" }}
+              >
+                Voltar para o login
+              </button>
+            </div>
+          </form>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -150,6 +229,21 @@ export default function Login() {
                   {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {modo === "login" && (
+                <div className="mt-1.5 text-right">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvisoRecuperacao(false);
+                      setModo("recuperar");
+                    }}
+                    className="text-xs font-medium underline"
+                    style={{ color: "var(--aurora-muted-foreground)" }}
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
+              )}
             </div>
 
             {modo === "cadastro" && (
@@ -189,7 +283,7 @@ export default function Login() {
           </form>
         )}
 
-        {!avisoConfirmacao && (
+        {!avisoConfirmacao && !avisoRecuperacao && modo !== "recuperar" && (
           <div className="mt-6 text-center text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
             {modo === "login" ? (
               <>

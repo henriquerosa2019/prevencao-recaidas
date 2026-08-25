@@ -10,6 +10,7 @@ import Passos45 from "./pages/Passos45";
 import Passos89 from "./pages/Passos89";
 import HistoricoGatilhos from "./pages/HistoricoGatilhos";
 import Login from "./pages/Login";
+import RedefinirSenha from "./pages/RedefinirSenha";
 
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Layout/Header";
@@ -25,7 +26,7 @@ import { AuthProvider, useAuth } from "./lib/authContext";
 // deixa de fazer sentido (redireciona para a Abertura).
 function AppShell() {
   const location = useLocation();
-  const { session, loading } = useAuth();
+  const { session, loading, recoveryMode } = useAuth();
 
   const isAbertura = location.pathname === "/";
 
@@ -37,6 +38,17 @@ function AppShell() {
       >
         Carregando...
       </div>
+    );
+  }
+
+  // 🔑 Chegou pelo link de "Esqueci minha senha" — o Supabase já criou uma
+  // sessão temporária de recuperação, mas ela só serve para trocar a senha,
+  // então mostramos essa tela em vez do app normal (mesmo com "sessão" ativa).
+  if (recoveryMode) {
+    return (
+      <Routes>
+        <Route path="*" element={<RedefinirSenha />} />
+      </Routes>
     );
   }
 
