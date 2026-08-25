@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
+  Award,
   X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -227,6 +228,7 @@ export default function Sidebar() {
             <Item to="/historico-gatilhos" icon={History} collapsed={iconOnly}>Histórico de Gatilhos</Item>
             <Item to="/plano" icon={ClipboardList} collapsed={iconOnly}>Plano de Prevenção</Item>
             <Item to="/reunioes" icon={Users} collapsed={iconOnly}>Minhas Reuniões</Item>
+            <Item to="/aniversarios" icon={Award} collapsed={iconOnly}>Aniversários/Fichas</Item>
             <Item to="/passos-4-5" icon={BookOpen} collapsed={iconOnly}>4º/5º Passo</Item>
             <Item to="/passos-8-9" icon={HeartHandshake} collapsed={iconOnly}>8º/9º Passo</Item>
 

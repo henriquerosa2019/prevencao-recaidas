@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 import PeriodoButtons from "@/components/PeriodoButtons";
 import { useAuth } from "@/lib/authContext";
+import { dataEfetivaSobriedade } from "@/lib/anniversaryGate";
 
 // 🎨 Dashboard redesenhado no Lovable — paleta "Aurora Recovery" (azuis e
 // violetas futuristas, vidro fosco, brilho neon). As cores usam variáveis
@@ -367,19 +368,30 @@ export default function UrgeDashboardMVP() {
     if (user) fetchData();
   }, [user]);
 
-  // 🏆 Contador de sobriedade + plano de prevenção (para o resumo/PDF)
+  // 🏆 Contador de sobriedade + plano de prevenção (para o resumo/PDF).
+  // Se houver recaída registrada depois da data de início, a contagem
+  // reinicia a partir da recaída mais recente — veja src/lib/anniversaryGate.ts.
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_config")
-      .select("sobriety_start_date, prevention_plan")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        setSobrietyDate(data?.sobriety_start_date || null);
-        setPreventionPlan(data?.prevention_plan?.trim() || null);
-      });
+    Promise.all([
+      supabase
+        .from("user_config")
+        .select("sobriety_start_date, prevention_plan")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("relapses")
+        .select("relapse_date")
+        .eq("user_id", user.id)
+        .order("relapse_date", { ascending: false })
+        .limit(1),
+    ]).then(([{ data: config }, { data: ultimaRecaida }]) => {
+      setSobrietyDate(
+        dataEfetivaSobriedade(config?.sobriety_start_date || null, ultimaRecaida?.[0]?.relapse_date || null)
+      );
+      setPreventionPlan(config?.prevention_plan?.trim() || null);
+    });
   }, [user]);
 
   // Atualiza o contador a cada minuto

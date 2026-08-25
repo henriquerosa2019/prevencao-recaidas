@@ -9,6 +9,7 @@ import Reunioes from "./pages/Reunioes";
 import Passos45 from "./pages/Passos45";
 import Passos89 from "./pages/Passos89";
 import HistoricoGatilhos from "./pages/HistoricoGatilhos";
+import Aniversarios from "./pages/Aniversarios";
 import Login from "./pages/Login";
 import RedefinirSenha from "./pages/RedefinirSenha";
 
@@ -92,6 +93,9 @@ function AppShell() {
 
               {/* ✅ Histórico de Gatilhos */}
               <Route path="/historico-gatilhos" element={<HistoricoGatilhos />} />
+
+              {/* ✅ Aniversários/Fichas + Recaída */}
+              <Route path="/aniversarios" element={<Aniversarios />} />
 
               {/* ✅ Passos 4º/5º e 8º/9º */}
               <Route path="/passos-4-5" element={<Passos45 />} />

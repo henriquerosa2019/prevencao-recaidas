@@ -5,11 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";   // ✅ Importação adicionada
+import { useAuth } from "@/lib/authContext";
+import { marcoDeHoje, dataEfetivaSobriedade, roleLabel } from "@/lib/anniversaryGate";
 
 export default function Abertura() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [parabens, setParabens] = useState<string[]>([]);
 
   // ✅ Mensagens padrão (fallback)
   const mensagensPadrao = [
@@ -53,6 +57,57 @@ export default function Abertura() {
     return () => clearTimeout(timer);
   }, [navigate]);
 
+  // 🎉 Verifica, a cada login, se o próprio usuário ou algum
+  // padrinho/madrinha/afilhado(a) cadastrado está completando um marco hoje.
+  useEffect(() => {
+    if (!user) return;
+
+    async function verificarAniversarios() {
+      const hoje = new Date();
+      const mensagens: string[] = [];
+
+      const { data: fichas } = await supabase
+        .from("sponsor_anniversaries")
+        .select("person_role, person_name, event_date")
+        .eq("user_id", user!.id);
+
+      (fichas || []).forEach((f: any) => {
+        const marco = marcoDeHoje(f.event_date, hoje);
+        if (marco) {
+          mensagens.push(`🎉 ${f.person_name} (${roleLabel(f.person_role)}) está completando ${marco} hoje!`);
+        }
+      });
+
+      const [{ data: config }, { data: ultimaRecaida }] = await Promise.all([
+        supabase
+          .from("user_config")
+          .select("sobriety_start_date")
+          .eq("user_id", user!.id)
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("relapses")
+          .select("relapse_date")
+          .eq("user_id", user!.id)
+          .order("relapse_date", { ascending: false })
+          .limit(1),
+      ]);
+
+      const dataEfetiva = dataEfetivaSobriedade(
+        config?.sobriety_start_date || null,
+        ultimaRecaida?.[0]?.relapse_date || null
+      );
+      const marcoProprio = marcoDeHoje(dataEfetiva, hoje);
+      if (marcoProprio) {
+        mensagens.push(`🎉 Parabéns! Você está completando ${marcoProprio} de recuperação hoje!`);
+      }
+
+      setParabens(mensagens);
+    }
+
+    verificarAniversarios();
+  }, [user]);
+
   return (
     <div className="aurora-shell aurora-grid-noise flex flex-col items-center justify-between h-screen text-center p-6">
       <AnimatePresence mode="wait">
@@ -76,6 +131,19 @@ export default function Abertura() {
             transition={{ duration: 1 }}
             className="max-w-lg flex-1 flex flex-col justify-center"
           >
+            {parabens.length > 0 && (
+              <div
+                className="aurora-glass-strong rounded-2xl p-4 mb-6 space-y-2"
+                style={{ boxShadow: "var(--aurora-shadow-glow)" }}
+              >
+                {parabens.map((msg, i) => (
+                  <p key={i} className="text-sm font-medium aurora-text-glow-soft">
+                    {msg}
+                  </p>
+                ))}
+              </div>
+            )}
+
             <h1 className="text-2xl font-display font-semibold mb-4 aurora-text-glow">Mensagem do Dia</h1>
             <p className="text-lg italic mb-8" style={{ color: "var(--aurora-foreground)" }}>{mensagem}</p>
 
