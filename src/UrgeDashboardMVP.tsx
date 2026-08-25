@@ -12,8 +12,14 @@ import {
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { FileDown } from "lucide-react";
+import { Activity, FileDown, Flame, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { cn } from "@/lib/utils";
+
+// 🎨 Dashboard redesenhado no Lovable — paleta "Aurora Recovery" (azuis e
+// violetas futuristas, vidro fosco, brilho neon). As cores usam variáveis
+// --aurora-* definidas em index.css, isoladas do design system padrão do
+// app — só esta tela e o painel lateral ganham este visual novo.
 
 const PERIODOS = ["7d", "14d", "30d"];
 const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -47,19 +53,19 @@ const GATILHO_ABREV: Record<string, string> = {
   Solidão: "So",
 };
 
-// Cor categórica fixa de cada gatilho (usada no mapa de calor, rótulos e legendas)
+// Paleta categórica "Aurora Recovery" — mesma usada no redesenho do Lovable
 const GATILHO_COR: Record<string, string> = {
-  "Ausência de Reuniões": "#0284c7",
-  "Bar/Festa": "#9333ea",
-  "Cansaço": "#64748b",
-  "Distanciamento do Programa": "#78350f",
-  "Influência de Amigos / Grupo": "#0d9488",
-  "Noite/Insônia": "#4338ca",
-  Pornografia: "#dc2626",
-  Raiva: "#ea580c",
-  "Redes Sociais": "#2563eb",
-  Sexo: "#db2777",
-  Solidão: "#16a34a",
+  "Ausência de Reuniões": "oklch(0.72 0.15 215)",
+  "Bar/Festa": "oklch(0.66 0.22 300)",
+  "Cansaço": "oklch(0.62 0.07 268)",
+  "Distanciamento do Programa": "oklch(0.58 0.14 268)",
+  "Influência de Amigos / Grupo": "oklch(0.74 0.16 190)",
+  "Noite/Insônia": "oklch(0.55 0.2 285)",
+  Pornografia: "oklch(0.66 0.24 340)",
+  Raiva: "oklch(0.7 0.2 20)",
+  "Redes Sociais": "oklch(0.64 0.19 258)",
+  Sexo: "oklch(0.7 0.21 325)",
+  Solidão: "oklch(0.74 0.16 165)",
 };
 
 function abrevGatilho(nome: string) {
@@ -67,7 +73,7 @@ function abrevGatilho(nome: string) {
 }
 
 function corGatilho(nome: string) {
-  return GATILHO_COR[nome] || "#6b7280";
+  return GATILHO_COR[nome] || "oklch(0.65 0.1 275)";
 }
 
 type ParetoRow = { nome: string; count: number; intensidade: number };
@@ -76,27 +82,87 @@ type HeatCellDetail = Record<
   { count: number; total: number; avg: number }
 >;
 
-function Card({
+// ================= Painel (Card) no estilo Aurora =================
+function Panel({
   title,
-  children,
+  subtitle,
   footer,
+  right,
+  className,
   onClick,
+  children,
 }: {
   title: string;
-  children: React.ReactNode;
+  subtitle?: string;
   footer?: React.ReactNode;
+  right?: React.ReactNode;
+  className?: string;
   onClick?: () => void;
+  children: React.ReactNode;
 }) {
   return (
-    <div
+    <section
       onClick={onClick}
-      className={`rounded-2xl shadow-sm border border-gray-200 bg-white p-4 md:p-6 ${
-        onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
-      }`}
+      className={cn(
+        "aurora-glass relative overflow-hidden rounded-3xl p-5 md:p-6",
+        onClick && "cursor-pointer transition-transform duration-200 hover:-translate-y-0.5",
+        className
+      )}
     >
-      <h2 className="text-lg md:text-xl font-semibold mb-3">{title}</h2>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, transparent, var(--aurora-primary), transparent)",
+        }}
+      />
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="aurora-font-display aurora-text-glow text-base font-semibold md:text-lg">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="mt-1 text-xs md:text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {right}
+      </header>
       {children}
-      {footer ? <div className="mt-3 text-sm text-gray-600">{footer}</div> : null}
+      {footer && (
+        <p className="mt-4 text-[11px] md:text-xs" style={{ color: "var(--aurora-muted-foreground)" }}>
+          {footer}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Kpi({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="aurora-glass group relative overflow-hidden rounded-3xl p-5 transition-transform duration-300 hover:-translate-y-1">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full aurora-gradient-bg opacity-20 blur-2xl transition-opacity group-hover:opacity-40"
+      />
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wide" style={{ color: "var(--aurora-muted-foreground)" }}>
+        <Icon className="h-4 w-4" style={{ color: "var(--aurora-primary)" }} />
+        {label}
+      </div>
+      <p className="mt-3 aurora-font-display aurora-text-glow text-2xl font-bold">{value}</p>
+      <p className="mt-1 text-xs" style={{ color: "var(--aurora-muted-foreground)" }}>{hint}</p>
     </div>
   );
 }
@@ -183,15 +249,37 @@ export default function UrgeDashboardMVP() {
       .sort((a, b) => b.ocorrencias - a.ocorrencias);
   }, [data]);
 
+  const maxParetoValue = Math.max(1, ...paretoData.map((p) => p.ocorrencias));
+
+  // 🎨 Gradiente azul → violeta → magenta pela intensidade relativa da célula
+  // (contagem / máximo). Usado no mapa de árvore.
   const getBarColor = (count: number, max: number) => {
-    const ratio = count / max;
-    if (ratio > 0.8) return "#7f0000";
-    if (ratio > 0.6) return "#c71c1c";
-    if (ratio > 0.4) return "#f97316";
-    if (ratio > 0.2) return "#fdba74";
-    if (ratio > 0.1) return "#fef08a";
-    return "#fefce8";
+    const ratio = Math.min(1, count / (max || 1));
+    return `oklch(${(0.34 + ratio * 0.3).toFixed(3)} ${(0.09 + ratio * 0.14).toFixed(3)} ${(
+      268 +
+      ratio * 45
+    ).toFixed(1)})`;
   };
+
+  // 🎨 Gradiente do mapa de calor pela intensidade média (0–10) — do quase
+  // transparente (sem dados) ao magenta vibrante (mais crítico).
+  const getHeatColor = (v: number) => {
+    if (v <= 0) return "oklch(0.24 0.04 275 / 45%)";
+    if (v < 2) return "oklch(0.42 0.11 245 / 70%)";
+    if (v < 4) return "oklch(0.5 0.15 262 / 80%)";
+    if (v < 6) return "oklch(0.56 0.19 285 / 88%)";
+    if (v < 8) return "oklch(0.62 0.23 305 / 94%)";
+    if (v < 9) return "oklch(0.66 0.25 330)";
+    return "oklch(0.72 0.24 348)";
+  };
+
+  const intensidadeMedia = useMemo(
+    () =>
+      data.length
+        ? (data.reduce((s, d) => s + (d.intensity || 0), 0) / data.length).toFixed(1)
+        : "—",
+    [data]
+  );
 
   const heatmapData = useMemo(() => {
     const matriz = Array.from({ length: 7 }, () => Array(24).fill(0));
@@ -395,66 +483,92 @@ export default function UrgeDashboardMVP() {
   }
 
   // 🌳 Conteúdo customizado das células dos mapas de árvore ("Por Dia da Semana" e
-  // "Por Horário"): cor pela mesma escala de intensidade, frequência no topo e o
-  // nome de cada gatilho daquela célula. Cada linha de texto só é desenhada quando
-  // cabe de fato dentro da célula (largura e altura reais), o que torna o gráfico
-  // responsivo em qualquer tamanho de tela, do desktop ao celular. Em células com
-  // fundo alaranjado/avermelhado/escuro o texto vira branco para garantir contraste;
-  // em fundos claros (amarelo pálido) mantém a cor categórica de cada gatilho.
+  // "Por Horário"): célula arredondada com gradiente azul→violeta→magenta pela
+  // intensidade relativa, cabeçalho e nomes de gatilhos em branco (com halo escuro
+  // para contraste garantido em qualquer tom de fundo) e um marcador colorido por
+  // gatilho. Cada linha de texto só é desenhada quando cabe de fato na largura real
+  // da célula, o que mantém o gráfico responsivo do desktop ao celular.
   function TreemapCellContent(props: any) {
     const { x, y, width, height, name, value, gatilhos = [], max } = props;
     if (!width || !height || width <= 0 || height <= 0) return null;
     const ratio = value / (max || 1);
-    const bg = getBarColor(value, max || 1);
-    // getBarColor: ratio<=0.1 quase-branco, <=0.2 amarelo pálido (fundos claros) —
-    // acima disso já é pêssego/laranja/vermelho/vinho (fundos escuros/avermelhados).
-    const fundoClaro = ratio <= 0.2;
-    const corRotulo = fundoClaro ? "#111827" : "#ffffff";
+    const fill = `oklch(${(0.34 + ratio * 0.3).toFixed(3)} ${(0.09 + ratio * 0.14).toFixed(
+      3
+    )} ${(268 + ratio * 45).toFixed(1)})`;
 
-    const margemInterna = 6;
-    const larguraUtil = width - margemInterna;
+    const pad = 3;
+    const rw = Math.max(0, width - pad * 2);
+    const rh = Math.max(0, height - pad * 2);
 
+    const headerDisponivel = width - 22;
     const headerTexto = `${name} · ${value}`;
-    const showLabel = width > 28 && height > 18 && largImg(headerTexto, 12) <= larguraUtil;
+    const showHeader = width > 40 && height > 28 && largImg(headerTexto, 13) <= headerDisponivel;
 
-    const linhasMax = showLabel ? Math.max(0, Math.floor((height - 24) / 12)) : 0;
+    const subTexto = `${value} registro${value === 1 ? "" : "s"}`;
+    const showSub = showHeader && height > 46 && largImg(subTexto, 11) <= headerDisponivel;
+
+    const linhaAlt = 15;
+    const inicioNomes = showSub ? 58 : showHeader ? 40 : 22;
+    const gatilhoDisponivel = width - 35;
+    const linhasMax = Math.max(0, Math.floor((height - inicioNomes - 8) / linhaAlt));
     const nomesVisiveis: string[] = [];
     for (const g of gatilhos) {
       if (nomesVisiveis.length >= linhasMax) break;
-      if (largImg(g, 10) <= larguraUtil) nomesVisiveis.push(g);
+      if (largImg(g, 10) <= gatilhoDisponivel) nomesVisiveis.push(g);
     }
 
     return (
       <g>
-        <rect x={x} y={y} width={width} height={height} style={{ fill: bg, stroke: "#fff", strokeWidth: 2 }} />
+        <rect
+          x={x + pad}
+          y={y + pad}
+          width={rw}
+          height={rh}
+          rx={14}
+          fill={fill}
+          stroke="oklch(0.85 0.08 285 / 30%)"
+          strokeWidth={1}
+        />
         <title>
           {name} · {value} registro{value === 1 ? "" : "s"}
           {gatilhos.length > 0 ? ` · ${gatilhos.join(", ")}` : ""}
         </title>
-        {showLabel && (
+        {showHeader && (
           <text
-            x={x + width / 2}
-            y={y + 16}
-            textAnchor="middle"
-            fontSize={12}
+            x={x + 14}
+            y={y + 22}
+            fill="oklch(0.98 0.01 280)"
+            fontSize={13}
             fontWeight={700}
-            fill={corRotulo}
+            style={{ textShadow: "0 2px 8px rgba(0,0,0,.55)" }}
           >
-            {headerTexto}
+            {name} · {value}
+          </text>
+        )}
+        {showSub && (
+          <text
+            x={x + 14}
+            y={y + 40}
+            fill="oklch(0.9 0.03 285 / 85%)"
+            fontSize={11}
+            style={{ textShadow: "0 2px 8px rgba(0,0,0,.55)" }}
+          >
+            {subTexto}
           </text>
         )}
         {nomesVisiveis.map((g, i) => (
-          <text
-            key={g}
-            x={x + width / 2}
-            y={y + 32 + i * 12}
-            textAnchor="middle"
-            fontSize={10}
-            fontWeight={600}
-            fill={fundoClaro ? corGatilho(g) : "#ffffff"}
-          >
-            {g}
-          </text>
+          <g key={g}>
+            <circle cx={x + 18} cy={y + inicioNomes + i * linhaAlt - 4} r={3.5} fill={corGatilho(g)} />
+            <text
+              x={x + 27}
+              y={y + inicioNomes + i * linhaAlt}
+              fill="oklch(0.95 0.02 285 / 92%)"
+              fontSize={10}
+              style={{ textShadow: "0 2px 6px rgba(0,0,0,.5)" }}
+            >
+              {g}
+            </text>
+          </g>
         ))}
       </g>
     );
@@ -563,59 +677,99 @@ export default function UrgeDashboardMVP() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 bg-white/90 backdrop-blur border-b border-gray-200 z-10">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between flex-wrap gap-2">
-          <h1 className="text-xl md:text-2xl font-bold">MVP — Prevenção de Recaída</h1>
-          <div className="flex gap-2 text-sm items-center flex-wrap">
-            {PERIODOS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriodo(p)}
-                className={`px-3 py-1 rounded-full border ${
-                  periodo === p
-                    ? "bg-black text-white border-black"
-                    : "bg-white hover:bg-gray-100"
-                }`}
-              >
-                {p.replace("d", " dias")}
-              </button>
-            ))}
+    <div className="aurora-shell aurora-grid-noise -m-4 min-h-[calc(100vh-1px)] px-4 py-8 md:-m-6 md:px-8 lg:px-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        {/* Cabeçalho */}
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p
+              className="flex items-center gap-2 text-xs uppercase tracking-[0.25em]"
+              style={{ color: "var(--aurora-muted-foreground)" }}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Prevenção à recaída
+            </p>
+            <h1 className="mt-2 aurora-font-display aurora-text-glow text-3xl font-bold md:text-4xl">
+              Painel de Consciência
+            </h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="aurora-glass flex gap-1 rounded-full p-1">
+              {PERIODOS.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriodo(p)}
+                  className="rounded-full px-4 py-1.5 text-sm transition-all"
+                  style={
+                    periodo === p
+                      ? {
+                          backgroundImage: "var(--aurora-gradient)",
+                          color: "var(--aurora-primary-foreground)",
+                          boxShadow: "var(--aurora-shadow-glow-strong)",
+                          textShadow: "var(--aurora-text-glow-soft)",
+                        }
+                      : { color: "var(--aurora-muted-foreground)" }
+                  }
+                >
+                  {p.replace("d", " dias")}
+                </button>
+              ))}
+            </div>
             <button
               onClick={exportarPDF}
-              className="px-3 py-1 rounded-full border bg-white hover:bg-gray-100 flex items-center gap-1"
+              className="aurora-glass flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-colors hover:brightness-125"
               title="Exportar Relatório Clínico (PDF)"
+              style={{ color: "var(--aurora-foreground)" }}
             >
               <FileDown className="h-4 w-4" />
               Exportar PDF
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-6">
         {/* 🏆 Contador de Sobriedade */}
         {sobrietyCounter ? (
-          <div className="rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white p-5 shadow-sm flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <p className="text-sm uppercase tracking-wide opacity-90">
-                Você está limpo há
-              </p>
-              <p className="text-2xl md:text-3xl font-bold">
-                🏆 {sobrietyCounter.days} {sobrietyCounter.days === 1 ? "Dia" : "Dias"},{" "}
-                {sobrietyCounter.hours} {sobrietyCounter.hours === 1 ? "Hora" : "Horas"} Limpo
-              </p>
+          <section className="aurora-glass-strong relative overflow-hidden rounded-3xl p-6 md:p-8">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full aurora-gradient-bg opacity-30 blur-3xl"
+            />
+            <div className="relative flex flex-wrap items-center justify-between gap-6">
+              <div>
+                <p
+                  className="text-xs uppercase tracking-[0.25em]"
+                  style={{ color: "var(--aurora-muted-foreground)" }}
+                >
+                  Você está limpo há
+                </p>
+                <p className="mt-2 aurora-font-display aurora-text-glow text-4xl font-bold md:text-5xl">
+                  {sobrietyCounter.days} {sobrietyCounter.days === 1 ? "dia" : "dias"}
+                  <span className="ml-2 text-2xl md:text-3xl" style={{ color: "var(--aurora-muted-foreground)" }}>
+                    {sobrietyCounter.hours}h
+                  </span>
+                </p>
+              </div>
+              <div
+                className="flex items-center gap-3 rounded-2xl px-4 py-3"
+                style={{ border: "1px solid var(--aurora-border)" }}
+              >
+                <Trophy className="h-6 w-6" style={{ color: "var(--aurora-primary)" }} />
+                <p className="max-w-[16rem] text-sm" style={{ color: "var(--aurora-foreground)" }}>
+                  Continue firme. Cada dia registrado é um dia consciente.
+                </p>
+              </div>
             </div>
-            <p className="text-sm opacity-90 max-w-xs md:text-right">
-              Continue firme. Cada dia conta.
-            </p>
-          </div>
+          </section>
         ) : (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-4 text-sm text-gray-500 text-center">
+          <div
+            className="aurora-glass rounded-3xl p-4 text-center text-sm"
+            style={{ color: "var(--aurora-muted-foreground)" }}
+          >
             Defina sua data de início da recuperação em{" "}
             <button
               onClick={() => navigate("/config")}
-              className="text-blue-600 underline font-medium"
+              className="font-medium underline"
+              style={{ color: "var(--aurora-primary)" }}
             >
               Configurações
             </button>{" "}
@@ -624,33 +778,39 @@ export default function UrgeDashboardMVP() {
         )}
 
         {loading ? (
-          <p className="text-center text-gray-500">Carregando dados...</p>
+          <p className="text-center" style={{ color: "var(--aurora-muted-foreground)" }}>
+            Carregando dados...
+          </p>
         ) : showHistorico ? (
-          <div className="rounded-2xl shadow-sm border border-gray-200 bg-white p-4 md:p-6 max-w-3xl mx-auto w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-semibold">
-                Histórico de Registros ({periodo})
-              </h2>
+          <Panel
+            title={`Histórico de Registros (${periodo})`}
+            right={
               <button
                 onClick={() => setShowHistorico(false)}
-                className="px-3 py-1.5 rounded-full border text-sm bg-white hover:bg-gray-100"
+                className="aurora-glass rounded-full px-3 py-1.5 text-sm"
+                style={{ color: "var(--aurora-foreground)" }}
               >
                 ← Voltar
               </button>
-            </div>
+            }
+            className="mx-auto w-full max-w-3xl"
+          >
             {data.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
+              <p className="py-8 text-center" style={{ color: "var(--aurora-muted-foreground)" }}>
                 Nenhum registro encontrado no período selecionado.
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500 border-b">
-                      <th className="py-2 pr-4">Data/Hora</th>
-                      <th className="py-2 pr-4">Gatilho</th>
-                      <th className="py-2 pr-4">Intensidade</th>
-                      <th className="py-2">Observação</th>
+                    <tr
+                      className="text-left text-xs uppercase tracking-wide"
+                      style={{ color: "var(--aurora-muted-foreground)" }}
+                    >
+                      <th className="pb-3 pr-4 font-medium">Data/Hora</th>
+                      <th className="pb-3 pr-4 font-medium">Gatilho</th>
+                      <th className="pb-3 pr-4 font-medium">Intensidade</th>
+                      <th className="pb-3 font-medium">Observação</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -661,17 +821,17 @@ export default function UrgeDashboardMVP() {
                           new Date(a.created_at).getTime()
                       )
                       .map((d, i) => (
-                        <tr key={i} className="border-b last:border-0">
-                          <td className="py-2 pr-4 whitespace-nowrap">
+                        <tr key={i} style={{ borderTop: "1px solid var(--aurora-border)" }}>
+                          <td className="py-3 pr-4 whitespace-nowrap">
                             {new Date(d.created_at).toLocaleString("pt-BR", {
                               timeZone: "America/Sao_Paulo",
                             })}
                           </td>
-                          <td className="py-2 pr-4">
+                          <td className="py-3 pr-4">
                             {TRADUCOES_GATILHOS[d.trigger] || d.trigger}
                           </td>
-                          <td className="py-2 pr-4">{d.intensity}/10</td>
-                          <td className="py-2 text-gray-600">
+                          <td className="py-3 pr-4">{d.intensity}/10</td>
+                          <td className="py-3" style={{ color: "var(--aurora-muted-foreground)" }}>
                             {d.note && d.note !== "EMPTY" ? d.note : "—"}
                           </td>
                         </tr>
@@ -680,56 +840,95 @@ export default function UrgeDashboardMVP() {
                 </table>
               </div>
             )}
-          </div>
+          </Panel>
         ) : (
           <>
+            {/* KPIs */}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <Kpi
+                icon={Activity}
+                label={`Registros (${periodo})`}
+                value={String(data.length)}
+                hint="desejos observados"
+              />
+              <Kpi
+                icon={Flame}
+                label="Intensidade média"
+                value={String(intensidadeMedia)}
+                hint="escala de 0 a 10"
+              />
+              <Kpi
+                icon={ShieldCheck}
+                label="Gatilho principal"
+                value={paretoData[0]?.gatilho ?? "—"}
+                hint={paretoData[0] ? `${paretoData[0].ocorrencias} ocorrências` : "sem dados"}
+              />
+              <Kpi
+                icon={Sparkles}
+                label="Horário crítico"
+                value={
+                  horarioCritico.max > 0
+                    ? `${horarioCritico.diaCrit} · ${horarioCritico.horaCrit}`
+                    : "—"
+                }
+                hint={horarioCritico.max > 0 ? `intensidade ${horarioCritico.max.toFixed(1)}` : "sem dados"}
+              />
+            </div>
+
             {/* 📊 Gatilhos */}
-            <Card
-              title={`Gatilhos (${periodo}) · ${data.length} registros`}
+            <Panel
+              title={`Gatilhos (${periodo})`}
+              subtitle={`${data.length} registros no período`}
+              footer="Clique para ver o histórico completo de registros"
               onClick={() => setShowHistorico(true)}
-              footer={
-                <span className="text-xs text-gray-400">
-                  Clique para ver o histórico completo de registros
-                </span>
-              }
             >
-              <div className="h-64 md:h-80">
+              <div className="h-72 md:h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={paretoData} margin={{ bottom: 50 }}>
+                  <BarChart data={paretoData} margin={{ bottom: 60, left: -18 }}>
                     <XAxis
                       dataKey="gatilho"
-                      tick={{ fontSize: 13, dy: 10, fill: "#374151" }}
+                      tick={{ fontSize: 11, dy: 8, fill: "oklch(0.82 0.04 280)" }}
                       interval={0}
-                      angle={-20}
+                      angle={-22}
                       textAnchor="end"
                       height={100}
+                      axisLine={false}
+                      tickLine={false}
                     />
-                    <YAxis tick={{ fontSize: 12, fill: "#374151" }} />
-                    <RTooltip />
-                    <Bar dataKey="ocorrencias" radius={[6, 6, 0, 0]}>
+                    <YAxis
+                      tick={{ fontSize: 11, fill: "oklch(0.75 0.04 280)" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <RTooltip
+                      cursor={{ fill: "oklch(0.7 0.1 285 / 10%)" }}
+                      contentStyle={{
+                        background: "oklch(0.22 0.06 276 / 95%)",
+                        border: "1px solid oklch(0.72 0.09 280 / 25%)",
+                        borderRadius: 14,
+                        color: "oklch(0.97 0.01 280)",
+                        boxShadow: "0 20px 50px -20px rgba(0,0,0,.8)",
+                      }}
+                    />
+                    <Bar dataKey="ocorrencias" radius={[8, 8, 0, 0]} name="Ocorrências">
                       {paretoData.map((entry, i) => (
                         <Cell
                           key={i}
-                          fill={getBarColor(
-                            entry.ocorrencias,
-                            Math.max(...paretoData.map((d) => d.ocorrencias))
-                          )}
+                          fill={corGatilho(entry.gatilho)}
+                          fillOpacity={0.35 + 0.65 * (entry.ocorrencias / maxParetoValue)}
                         />
                       ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </Panel>
 
             {/* 📅 Recorrência por Dia da Semana — Mapa de Árvore */}
-            <Card
-              title={`Por Dia da Semana (${periodo}) · ${data.length} registros`}
-              footer={
-                <span className="text-xs text-gray-400">
-                  O tamanho de cada célula é proporcional ao número de registros do dia
-                </span>
-              }
+            <Panel
+              title={`Por Dia da Semana (${periodo})`}
+              subtitle={`${data.length} registros no período`}
+              footer="O tamanho de cada célula é proporcional ao número de registros do dia."
             >
               <div className="h-[420px] md:h-[520px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -742,16 +941,13 @@ export default function UrgeDashboardMVP() {
                   />
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </Panel>
 
             {/* 🕐 Recorrência por Horário — Mapa de Árvore */}
-            <Card
-              title={`Por Horário (${periodo}) · ${data.length} registros`}
-              footer={
-                <span className="text-xs text-gray-400">
-                  O tamanho de cada célula é proporcional ao número de registros do horário
-                </span>
-              }
+            <Panel
+              title={`Por Horário (${periodo})`}
+              subtitle={`${data.length} registros no período`}
+              footer="O tamanho de cada célula é proporcional ao número de registros do horário."
             >
               <div className="h-[420px] md:h-[520px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -764,10 +960,13 @@ export default function UrgeDashboardMVP() {
                   />
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </Panel>
 
             {/* 🔥 Heatmap com mini-Pareto no hover */}
-            <Card title={`Mapa de Calor de Desejos (${periodo}) · ${data.length} registros`}>
+            <Panel
+              title={`Mapa de Calor de Desejos (${periodo})`}
+              subtitle={`${data.length} registros no período — passe o mouse para o mini-Pareto`}
+            >
               <div className="overflow-x-auto">
                 <div className="min-w-[860px] relative" ref={heatmapWrapRef}>
                   <div className="grid grid-cols-[60px_repeat(24,minmax(22px,1fr))] gap-1">
@@ -775,31 +974,22 @@ export default function UrgeDashboardMVP() {
                     {Array.from({ length: 24 }, (_, i) => (
                       <div
                         key={`h-${i}`}
-                        className="text-[11px] text-gray-600 text-center"
+                        className="text-center text-[10px] tabular-nums"
+                        style={{ color: "var(--aurora-muted-foreground)" }}
                       >
                         {i}
                       </div>
                     ))}
                     {heatmapData.map((row, rIdx) => (
                       <React.Fragment key={`r-${rIdx}`}>
-                        <div className="text-[11px] text-gray-700 h-[30px] flex items-center font-medium">
+                        <div
+                          className="text-[11px] h-[30px] flex items-center font-medium"
+                          style={{ color: "var(--aurora-foreground)" }}
+                        >
                           {DIAS[rIdx]}
                         </div>
                         {row.map((v, cIdx) => {
-                          const bg =
-                            v <= 0
-                              ? "#ffffff"
-                              : v < 2
-                              ? "#fff8cc"
-                              : v < 4
-                              ? "#ffe066"
-                              : v < 6
-                              ? "#ff9f1c"
-                              : v < 8
-                              ? "#ff4d00"
-                              : v < 9
-                              ? "#b30000"
-                              : "#000000";
+                          const bg = getHeatColor(v);
 
                           const cellAggCor = heatmapDetails[rIdx][cIdx];
                           const dominanteEntry = Object.entries(cellAggCor).sort(
@@ -844,27 +1034,23 @@ export default function UrgeDashboardMVP() {
                               key={`c-${rIdx}-${cIdx}`}
                               onMouseEnter={onEnter}
                               onMouseLeave={() => setHover(null)}
+                              className="grid place-items-center transition-transform duration-150 hover:scale-110"
                               style={{
                                 backgroundColor: bg,
-                                border: "1px solid rgba(255,255,255,0.4)",
-                                borderRadius: "3px",
+                                border: "1px solid oklch(0.85 0.08 285 / 20%)",
+                                borderRadius: "6px",
                                 height: "30px",
                                 cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
+                                boxShadow: v >= 6 ? `0 0 14px -2px ${bg}` : undefined,
                               }}
                             >
                               {nomeDominante && (
                                 <span
+                                  className="aurora-text-glow-soft"
                                   style={{
                                     fontSize: "10px",
                                     fontWeight: 700,
-                                    lineHeight: "15px",
-                                    padding: "0 3px",
-                                    borderRadius: "999px",
                                     color: corGatilho(nomeDominante),
-                                    background: "rgba(255,255,255,0.85)",
                                   }}
                                 >
                                   {abrevGatilho(nomeDominante)}
@@ -880,30 +1066,36 @@ export default function UrgeDashboardMVP() {
                   {/* Tooltip com cabeçalho formatado */}
                   {hover && hover.rows.length > 0 && (
                     <div
-                      className="absolute z-50 bg-white border border-gray-300 rounded-lg shadow-lg text-xs max-w-[260px] overflow-hidden"
+                      className="aurora-glass-strong pointer-events-none absolute z-50 max-w-[260px] overflow-hidden rounded-2xl text-xs"
                       style={{
                         top: Math.max(0, hover.top - 100),
                         left: hover.left,
                       }}
                     >
-                      <div className="sticky top-0 bg-blue-50 border-b border-blue-200 px-3 py-1 font-bold text-blue-700 text-[11px]">
-                        Dia ({hover.dia}) / {hover.hora}
+                      <div
+                        className="px-3 py-2 font-bold text-[11px] aurora-text-glow"
+                        style={{ borderBottom: "1px solid var(--aurora-border)" }}
+                      >
+                        {hover.dia} · {hover.hora}
                       </div>
-                      <div className="sticky top-6 bg-blue-50 border-b border-blue-200 px-3 py-1 font-semibold text-blue-700 text-[11px]">
-                        Registro&nbsp;&nbsp;&nbsp;&nbsp;Qtde&nbsp;&nbsp;&nbsp;&nbsp;Intensidade
-                      </div>
-                      <div className="p-3 max-h-[160px] overflow-y-auto">
+                      <div className="p-3 max-h-[160px] overflow-y-auto space-y-1.5">
                         {hover.rows.slice(0, 8).map((r, i) => (
                           <div
                             key={`${r.nome}-${i}`}
-                            className="grid grid-cols-3 gap-2 border-b border-gray-100 py-0.5 last:border-0"
+                            className="flex items-center gap-2"
                           >
-                            <span className="truncate col-span-1">{r.nome}</span>
-                            <span className="text-gray-700 text-right col-span-1">
-                              {r.count}×
+                            <span
+                              className="h-2 w-2 shrink-0 rounded-full"
+                              style={{ backgroundColor: corGatilho(r.nome) }}
+                            />
+                            <span className="truncate" style={{ color: "var(--aurora-foreground)" }}>
+                              {r.nome}
                             </span>
-                            <span className="text-gray-600 text-right col-span-1">
-                              {r.intensidade}
+                            <span
+                              className="ml-auto tabular-nums shrink-0"
+                              style={{ color: "var(--aurora-muted-foreground)" }}
+                            >
+                              {r.count}× · {r.intensidade}
                             </span>
                           </div>
                         ))}
@@ -914,35 +1106,45 @@ export default function UrgeDashboardMVP() {
               </div>
 
               {/* Legenda e total */}
-              <div className="mt-4 flex flex-wrap items-center justify-between text-sm text-gray-600">
+              <div
+                className="mt-4 flex flex-wrap items-center justify-between text-sm"
+                style={{ color: "var(--aurora-muted-foreground)" }}
+              >
                 <div>
                   Total de registros nos últimos 30 dias:{" "}
-                  <strong>{totalRegistros30d}</strong>
+                  <strong style={{ color: "var(--aurora-foreground)" }}>{totalRegistros30d}</strong>
                 </div>
                 <div className="flex items-center gap-2 mt-2 md:mt-0">
-                  <span className="text-xs text-gray-500">Menos crítico</span>
-                  <div className="w-4 h-4 rounded-sm border" style={{ backgroundColor: "#ffffff" }} />
-                  <div className="w-4 h-4 rounded-sm border" style={{ backgroundColor: "#fff8cc" }} />
-                  <div className="w-4 h-4 rounded-sm border" style={{ backgroundColor: "#ffe066" }} />
-                  <div className="w-4 h-4 rounded-sm border" style={{ backgroundColor: "#ff9f1c" }} />
-                  <div className="w-4 h-4 rounded-sm border" style={{ backgroundColor: "#ff4d00" }} />
-                  <div className="w-4 h-4 rounded-sm border" style={{ backgroundColor: "#b30000" }} />
-                  <div className="w-4 h-4 rounded-sm border" style={{ backgroundColor: "#000000" }} />
-                  <span className="text-xs text-gray-500">Mais crítico</span>
+                  <span className="text-xs">Menos crítico</span>
+                  {[0, 1, 3, 5, 7, 8.5, 10].map((v) => (
+                    <div
+                      key={v}
+                      className="w-4 h-4 rounded-sm"
+                      style={{ backgroundColor: getHeatColor(v), border: "1px solid var(--aurora-border)" }}
+                    />
+                  ))}
+                  <span className="text-xs">Mais crítico</span>
                 </div>
               </div>
 
               {/* Legenda das abreviações de gatilhos exibidas no centro de cada célula */}
-              <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1.5">
+              <div
+                className="mt-3 pt-3 flex flex-wrap gap-x-4 gap-y-1.5"
+                style={{ borderTop: "1px solid var(--aurora-border)" }}
+              >
                 {Object.entries(GATILHO_ABREV).map(([nome, sigla]) => (
-                  <div key={nome} className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <div
+                    key={nome}
+                    className="flex items-center gap-1.5 text-xs"
+                    style={{ color: "var(--aurora-muted-foreground)" }}
+                  >
                     <span
                       className="inline-flex items-center justify-center rounded-full font-bold"
                       style={{
                         width: 16,
                         height: 16,
                         fontSize: 9,
-                        color: "#fff",
+                        color: "oklch(0.98 0.01 280)",
                         backgroundColor: corGatilho(nome),
                       }}
                     >
@@ -952,90 +1154,116 @@ export default function UrgeDashboardMVP() {
                   </div>
                 ))}
               </div>
-            </Card>
-
-            {/* Resumo */}
-            <Card title="Total de Registros">
-              <div className="text-2xl font-bold">{totalRegistros30d}</div>
-              <p className="text-xs text-gray-500 mt-1">Últimos 30 dias</p>
-            </Card>
+            </Panel>
 
             {/* 🏆 Top 5 — Gatilho Mais Comum */}
-            <Card title={`Gatilho Mais Comum — Top 5 (${periodo})`}>
+            <Panel title={`Gatilho Mais Comum — Top 5 (${periodo})`}>
               {top5Gatilhos.length === 0 ? (
-                <p className="text-sm text-gray-500">Aguardando dados</p>
+                <p className="text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
+                  Aguardando dados
+                </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-gray-500 border-b">
-                        <th className="py-2 pr-4">#</th>
-                        <th className="py-2 pr-4">Gatilho</th>
-                        <th className="py-2 pr-4">Ocorrências</th>
-                        <th className="py-2 pr-4">Dia mais frequente</th>
-                        <th className="py-2">Horário mais frequente</th>
+                      <tr
+                        className="text-left text-xs uppercase tracking-wide"
+                        style={{ color: "var(--aurora-muted-foreground)" }}
+                      >
+                        <th className="pb-3 pr-4 font-medium">#</th>
+                        <th className="pb-3 pr-4 font-medium">Gatilho</th>
+                        <th className="pb-3 pr-4 font-medium">Ocorrências</th>
+                        <th className="pb-3 pr-4 font-medium">Dia mais frequente</th>
+                        <th className="pb-3 font-medium">Horário mais frequente</th>
                       </tr>
                     </thead>
                     <tbody>
                       {top5Gatilhos.map((g, i) => (
-                        <tr key={g.gatilho} className="border-b last:border-0">
-                          <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
-                          <td className="py-2 pr-4 font-medium">
-                            <span
-                              className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle"
-                              style={{ backgroundColor: corGatilho(g.gatilho) }}
-                            />
-                            {g.gatilho}
+                        <tr key={g.gatilho} style={{ borderTop: "1px solid var(--aurora-border)" }}>
+                          <td className="py-3 pr-4" style={{ color: "var(--aurora-muted-foreground)" }}>
+                            {i + 1}
                           </td>
-                          <td className="py-2 pr-4">{g.ocorrencias}×</td>
-                          <td className="py-2 pr-4">{g.diaTop}</td>
-                          <td className="py-2">{g.horaTop}</td>
+                          <td className="py-3 pr-4 font-medium aurora-text-glow-soft">
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full"
+                                style={{
+                                  backgroundColor: corGatilho(g.gatilho),
+                                  boxShadow: `0 0 12px ${corGatilho(g.gatilho)}`,
+                                }}
+                              />
+                              {g.gatilho}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 tabular-nums">{g.ocorrencias}×</td>
+                          <td className="py-3 pr-4" style={{ color: "var(--aurora-muted-foreground)" }}>
+                            {g.diaTop}
+                          </td>
+                          <td className="py-3" style={{ color: "var(--aurora-muted-foreground)" }}>
+                            {g.horaTop}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
-            </Card>
+            </Panel>
 
             {/* ⏰ Horário Crítico dos Top 5 */}
-            <Card title={`Horário Crítico — Top 5 (${periodo})`}>
+            <Panel title={`Horário Crítico — Top 5 (${periodo})`}>
               {top5Temporal.length === 0 ? (
-                <p className="text-sm text-gray-500">Aguardando dados</p>
+                <p className="text-sm" style={{ color: "var(--aurora-muted-foreground)" }}>
+                  Aguardando dados
+                </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-gray-500 border-b">
-                        <th className="py-2 pr-4">#</th>
-                        <th className="py-2 pr-4">Gatilho</th>
-                        <th className="py-2 pr-4">Dias mais críticos</th>
-                        <th className="py-2">Horários mais críticos</th>
+                      <tr
+                        className="text-left text-xs uppercase tracking-wide"
+                        style={{ color: "var(--aurora-muted-foreground)" }}
+                      >
+                        <th className="pb-3 pr-4 font-medium">#</th>
+                        <th className="pb-3 pr-4 font-medium">Gatilho</th>
+                        <th className="pb-3 pr-4 font-medium">Dias mais críticos</th>
+                        <th className="pb-3 font-medium">Horários mais críticos</th>
                       </tr>
                     </thead>
                     <tbody>
                       {top5Temporal.map((g, i) => (
-                        <tr key={g.gatilho} className="border-b last:border-0">
-                          <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
-                          <td className="py-2 pr-4 font-medium">
-                            <span
-                              className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle"
-                              style={{ backgroundColor: corGatilho(g.gatilho) }}
-                            />
-                            {g.gatilho}
+                        <tr key={g.gatilho} style={{ borderTop: "1px solid var(--aurora-border)" }}>
+                          <td className="py-3 pr-4" style={{ color: "var(--aurora-muted-foreground)" }}>
+                            {i + 1}
                           </td>
-                          <td className="py-2 pr-4">{g.dias}</td>
-                          <td className="py-2">{g.horas}</td>
+                          <td className="py-3 pr-4 font-medium aurora-text-glow-soft">
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full"
+                                style={{
+                                  backgroundColor: corGatilho(g.gatilho),
+                                  boxShadow: `0 0 12px ${corGatilho(g.gatilho)}`,
+                                }}
+                              />
+                              {g.gatilho}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4" style={{ color: "var(--aurora-muted-foreground)" }}>
+                            {g.dias}
+                          </td>
+                          <td className="py-3" style={{ color: "var(--aurora-muted-foreground)" }}>
+                            {g.horas}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
-            </Card>
+            </Panel>
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -27,6 +27,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+// 🎨 Painel lateral redesenhado no Lovable — paleta "Aurora Recovery"
+// (azuis/violetas futuristas, vidro fosco e brilho neon). As cores vêm das
+// variáveis --aurora-* definidas em index.css, isoladas do design system
+// padrão do app (--background, --primary etc.) para não alterar o visual
+// das demais telas — só o painel lateral (sempre visível) ganha este tema.
+
 function Item({
   to,
   icon: Icon,
@@ -45,13 +51,19 @@ function Item({
     <NavLink
       to={to}
       title={collapsed ? String(children) : undefined}
-      className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition
-        ${collapsed ? "justify-center" : ""}
-        ${active
-          ? "bg-blue-100 text-blue-700"
-          : "text-gray-700 hover:bg-gray-100"}`}
+      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all
+        ${collapsed ? "justify-center px-0" : ""}
+        ${active ? "aurora-text-glow-soft" : "hover:bg-white/5"}`}
+      style={{
+        backgroundColor: active ? "var(--aurora-sidebar-accent)" : undefined,
+        color: active ? "var(--aurora-sidebar-foreground)" : "var(--aurora-muted-foreground)",
+        boxShadow: active ? "var(--aurora-shadow-glow)" : undefined,
+      }}
     >
-      <Icon className={`h-4 w-4 shrink-0 ${active ? "text-blue-700" : "text-gray-500"}`} />
+      <Icon
+        className="h-4 w-4 shrink-0"
+        style={{ color: active ? "var(--aurora-violet)" : undefined }}
+      />
       {!collapsed && <span className="truncate">{children}</span>}
     </NavLink>
   );
@@ -65,12 +77,18 @@ function ItemEmBreve({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm text-gray-400 cursor-not-allowed">
+    <div
+      className="flex cursor-not-allowed items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm opacity-50"
+      style={{ color: "var(--aurora-muted-foreground)" }}
+    >
       <span className="flex items-center gap-2 truncate">
-        <Icon className="h-4 w-4 text-gray-300" />
+        <Icon className="h-4 w-4" style={{ color: "var(--aurora-muted-foreground)" }} />
         <span className="truncate">{children}</span>
       </span>
-      <span className="text-[10px] uppercase tracking-wide bg-gray-100 text-gray-400 rounded-full px-2 py-0.5 shrink-0">
+      <span
+        className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide"
+        style={{ borderColor: "var(--aurora-border)" }}
+      >
         Em breve
       </span>
     </div>
@@ -100,9 +118,14 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`${
+      className={`aurora-font-display relative z-20 ${
         collapsed ? "w-16" : "w-64"
-      } shrink-0 border-r bg-white/90 backdrop-blur flex flex-col transition-all duration-200`}
+      } shrink-0 flex flex-col backdrop-blur-xl transition-all duration-200`}
+      style={{
+        backgroundColor: "var(--aurora-sidebar)",
+        borderRight: "1px solid var(--aurora-sidebar-border)",
+        color: "var(--aurora-sidebar-foreground)",
+      }}
     >
       <div className="p-4 flex-1 overflow-y-auto">
         {/* Cabeçalho: clique para encolher/expandir o painel lateral */}
@@ -110,24 +133,37 @@ export default function Sidebar() {
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           title={collapsed ? "Expandir menu" : "Encolher menu"}
-          className={`w-full flex items-center mb-4 rounded-xl hover:bg-gray-100 transition ${
+          className={`w-full flex items-center mb-4 rounded-xl transition hover:bg-white/5 ${
             collapsed ? "justify-center p-2" : "justify-between p-1"
           }`}
         >
-          {!collapsed && (
-            <span className="text-left">
-              <h1 className="text-lg font-semibold leading-tight">Prevenção de Recaídas</h1>
-              <p className="text-xs text-gray-500">Seu caminho de recuperação</p>
+          <span className={`flex items-center gap-3 ${collapsed ? "" : ""}`}>
+            <span
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl aurora-gradient-bg"
+              style={{ boxShadow: "var(--aurora-shadow-glow-strong)" }}
+            >
+              <Heart className="h-4 w-4" style={{ color: "var(--aurora-primary-foreground)" }} />
             </span>
+            {!collapsed && (
+              <span className="text-left font-sans">
+                <span className="block truncate text-sm font-bold aurora-text-glow font-display">
+                  Prevenção de Recaídas
+                </span>
+                <span className="block truncate text-xs" style={{ color: "var(--aurora-muted-foreground)" }}>
+                  Seu caminho de recuperação
+                </span>
+              </span>
+            )}
+          </span>
+          {!collapsed && (
+            <ChevronLeft className="h-4 w-4 shrink-0" style={{ color: "var(--aurora-muted-foreground)" }} />
           )}
-          {collapsed ? (
-            <ChevronRight className="h-5 w-5 text-gray-500 shrink-0" />
-          ) : (
-            <ChevronLeft className="h-5 w-5 text-gray-500 shrink-0" />
+          {collapsed && (
+            <ChevronRight className="absolute right-1 top-1 h-3.5 w-3.5" style={{ color: "var(--aurora-muted-foreground)" }} />
           )}
         </button>
 
-        <nav className="space-y-1">
+        <nav className="space-y-1 font-sans">
           <Item to="/dashboard" icon={Home} collapsed={collapsed}>Dashboard</Item>
           <Item to="/registros" icon={LineChart} collapsed={collapsed}>Registros de Fissuras</Item>
           <Item to="/historico-gatilhos" icon={History} collapsed={collapsed}>Histórico de Gatilhos</Item>
@@ -141,11 +177,12 @@ export default function Sidebar() {
             type="button"
             onClick={() => setOpen(true)}
             title={collapsed ? "Telefones Urgentes" : undefined}
-            className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition ${
-              collapsed ? "justify-center" : ""
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-white/5 ${
+              collapsed ? "justify-center px-0" : ""
             }`}
+            style={{ color: "oklch(0.72 0.19 25)" }}
           >
-            <PhoneCall className="h-4 w-4 shrink-0 text-red-500" />
+            <PhoneCall className="h-4 w-4 shrink-0" />
             {!collapsed && <span className="truncate">Telefones Urgentes</span>}
           </button>
 
@@ -154,12 +191,18 @@ export default function Sidebar() {
             <div className="mt-3">
               <Accordion type="single" collapsible>
                 <AccordionItem value="12passos" className="border-none">
-                  <AccordionTrigger className="rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:no-underline [&>svg]:hidden">
+                  <AccordionTrigger
+                    className="rounded-xl px-3 py-2 text-sm hover:bg-white/5 hover:no-underline [&>svg]:hidden"
+                    style={{ color: "var(--aurora-muted-foreground)" }}
+                  >
                     <span className="flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-gray-500" />
+                      <Heart className="h-4 w-4" style={{ color: "var(--aurora-muted-foreground)" }} />
                       12 Passos
                     </span>
-                    <ChevronDown className="h-4 w-4 text-gray-400 ml-auto transition-transform" />
+                    <ChevronDown
+                      className="h-4 w-4 ml-auto transition-transform"
+                      style={{ color: "var(--aurora-muted-foreground)" }}
+                    />
                   </AccordionTrigger>
                   <AccordionContent className="pb-0">
                     <div className="pl-2 space-y-1">
@@ -178,18 +221,19 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="border-t p-4">
+      <div className="p-4 font-sans" style={{ borderTop: "1px solid var(--aurora-sidebar-border)" }}>
         <div className="space-y-1">
           <Item to="/config" icon={Settings} collapsed={collapsed}>Configurações</Item>
           <button
             type="button"
             title={collapsed ? "Sair" : undefined}
-            className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 ${
-              collapsed ? "justify-center" : ""
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-white/5 ${
+              collapsed ? "justify-center px-0" : ""
             }`}
+            style={{ color: "var(--aurora-muted-foreground)" }}
             onClick={() => alert("Sair (em breve)")}
           >
-            <LogOut className="h-4 w-4 shrink-0 text-gray-500" />
+            <LogOut className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Sair</span>}
           </button>
         </div>

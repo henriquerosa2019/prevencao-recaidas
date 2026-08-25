@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import Header from "@/components/Layout/Header";
 import { useToast } from "@/hooks/use-toast";
 import {
   Heart,
@@ -165,22 +164,23 @@ export default function Registrar() {
   // 🔹 Render
   return (
     <>
-      <Header />
-
-      <div className="max-w-3xl mx-auto bg-white shadow rounded-xl p-6 mt-6 space-y-6">
+      <div className="max-w-3xl mx-auto aurora-glass rounded-3xl p-6 mt-6 space-y-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight mb-1">Registrar Desejo</h2>
+          <h2 className="text-3xl font-display font-bold aurora-text-glow tracking-tight mb-1">Registrar Desejo</h2>
           <p className="text-muted-foreground mb-4">
             Identifique e registre seus gatilhos para reconhecer padrões.
           </p>
-          <div className="w-full h-[2px] bg-blue-500 mb-4" />
+          <div className="w-full h-[2px] aurora-gradient-bg mb-4" />
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <p className="text-sm text-gray-600">
-              <strong>Importante:</strong> Os dados deste aplicativo são pessoais e confidenciais. Em crise,
-              ligue <strong>188</strong> (CVV – Brasil).
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">Importante:</strong> Os dados deste aplicativo são pessoais e confidenciais. Em crise,
+              ligue <strong className="text-foreground">188</strong> (CVV – Brasil).
             </p>
-            <div className="text-sm bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2 md:mt-0 text-blue-800">
+            <div
+              className="text-sm aurora-glass rounded-lg p-2 mt-2 md:mt-0"
+              style={{ color: "var(--aurora-foreground)" }}
+            >
               <strong>📞 Linha de Ajuda AA:</strong> +55 (11) 3229-3611
             </div>
           </div>
@@ -196,8 +196,19 @@ export default function Registrar() {
                 key={g.id}
                 onClick={() => setGatilhoSelecionado(g.id)}
                 className={`p-3 border rounded-xl flex flex-col items-center justify-center transition-all ${
-                  ativo ? "bg-blue-600 text-white border-blue-700 shadow" : "bg-gray-50 hover:bg-gray-100"
+                  ativo
+                    ? "border-transparent shadow"
+                    : "border-border bg-secondary/40 hover:bg-secondary/60"
                 }`}
+                style={
+                  ativo
+                    ? {
+                        backgroundImage: "var(--aurora-gradient)",
+                        color: "var(--aurora-primary-foreground)",
+                        boxShadow: "var(--aurora-shadow-glow)",
+                      }
+                    : undefined
+                }
               >
                 <Icon size={24} className={`${ativo ? "text-white" : g.color} mb-1`} />
                 <span className="text-xs text-center">{g.label}</span>
@@ -208,9 +219,12 @@ export default function Registrar() {
 
         {/* Intensidade */}
         <div className="relative">
-          <label className="font-medium text-sm block mb-1">Intensidade: {intensidade}/10</label>
+          <label className="font-medium text-sm block mb-1 text-foreground">Intensidade: {intensidade}/10</label>
           {intensidade >= 8 && (
-            <p className="absolute -top-6 right-0 text-red-600 font-semibold text-sm">
+            <p
+              className="absolute -top-6 right-0 font-semibold text-sm"
+              style={{ color: "oklch(0.72 0.19 25)" }}
+            >
               Atenção, busque ajuda assim que possível!!!
             </p>
           )}
@@ -226,7 +240,7 @@ export default function Registrar() {
                 "linear-gradient(to right, #ffffff 0%, #fff8cc 16%, #ffe066 32%, #ff9f1c 56%, #b30000 80%, #000000 100%)",
             }}
           />
-          <div className="flex justify-between text-xs text-gray-600 mt-1">
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>Fraco</span>
             <span>Moderado</span>
             <span>Intenso</span>
@@ -235,18 +249,18 @@ export default function Registrar() {
 
         {/* Observações */}
         <div>
-          <label className="font-medium text-sm block mb-1">
-            Observações {intensidade >= 8 && <span className="text-red-500">(obrigatório)</span>}
+          <label className="font-medium text-sm block mb-1 text-foreground">
+            Observações {intensidade >= 8 && <span style={{ color: "oklch(0.72 0.19 25)" }}>(obrigatório)</span>}
           </label>
           <textarea
             rows={3}
             value={observacao}
             onChange={(e) => setObservacao(e.target.value)}
             placeholder="O que você estava fazendo? Como se sentia? O que ajudou ou não ajudou?"
-            className={`w-full border rounded-lg p-2 text-sm focus:ring-2 ${
+            className={`w-full rounded-lg border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${
               intensidade >= 8 && observacao.trim().length < 15
                 ? "border-red-400 focus:ring-red-400"
-                : "focus:ring-blue-400"
+                : "border-border focus:ring-ring"
             }`}
           />
         </div>
@@ -255,21 +269,25 @@ export default function Registrar() {
         <button
           onClick={handleSalvar}
           disabled={salvando}
-          className={`w-full py-3 rounded-lg text-white font-semibold transition ${
-            salvando ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          className={`w-full py-3 rounded-lg font-semibold transition ${
+            salvando ? "cursor-not-allowed opacity-60" : ""
           }`}
+          style={{
+            backgroundImage: "var(--aurora-gradient)",
+            color: "var(--aurora-primary-foreground)",
+          }}
         >
           {salvando ? "Salvando..." : "Salvar Desejo"}
         </button>
 
-        {mensagem && <p className="text-center mt-3 text-sm font-medium text-gray-700">{mensagem}</p>}
+        {mensagem && <p className="text-center mt-3 text-sm font-medium text-foreground">{mensagem}</p>}
       </div>
 
-      <footer className="max-w-3xl mx-auto text-center mt-8 mb-10 p-4 border-t border-gray-200">
-        <p className="text-base font-semibold">💡 Dica</p>
-        <p className="text-sm text-gray-600 mt-1">
+      <footer className="max-w-3xl mx-auto text-center mt-8 mb-10 aurora-glass rounded-2xl p-4">
+        <p className="text-base font-display font-semibold aurora-text-glow-soft">💡 Dica</p>
+        <p className="text-sm text-muted-foreground mt-1">
           Registrar seus desejos ajuda você a identificar padrões e antecipar situações de risco.{" "}
-          <strong>Quanto mais você registra, mais clareza terá sobre seus gatilhos pessoais.</strong>
+          <strong className="text-foreground">Quanto mais você registra, mais clareza terá sobre seus gatilhos pessoais.</strong>
         </p>
       </footer>
     </>

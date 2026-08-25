@@ -9,10 +9,10 @@ const STATUS_LABEL: Record<string, string> = {
   pronto: "Pronto",
   concluido: "Concluído",
 };
-const STATUS_COLOR: Record<string, string> = {
-  em_preparacao: "bg-yellow-100 text-yellow-700",
-  pronto: "bg-blue-100 text-blue-700",
-  concluido: "bg-green-100 text-green-700",
+const STATUS_COLOR: Record<string, React.CSSProperties> = {
+  em_preparacao: { backgroundColor: "oklch(0.75 0.15 85 / 20%)", color: "oklch(0.88 0.13 85)" },
+  pronto: { backgroundColor: "oklch(0.78 0.15 205 / 20%)", color: "oklch(0.88 0.1 205)" },
+  concluido: { backgroundColor: "oklch(0.7 0.17 150 / 20%)", color: "oklch(0.85 0.15 150)" },
 };
 
 export default function Passos89() {
@@ -104,9 +104,9 @@ export default function Passos89() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="bg-white shadow rounded-xl p-6 space-y-4">
-        <h2 className="text-xl font-bold">🤝 8º e 9º Passo — Lista de Reparação</h2>
-        <p className="text-sm text-gray-600">
+      <div className="aurora-glass rounded-3xl p-6 space-y-4">
+        <h2 className="text-xl font-display font-bold aurora-text-glow">🤝 8º e 9º Passo — Lista de Reparação</h2>
+        <p className="text-sm text-muted-foreground">
           Liste as pessoas que você prejudicou e o plano para reparar os danos, quando
           possível e sem causar mais mal.
         </p>
@@ -118,7 +118,7 @@ export default function Passos89() {
             value={person}
             onChange={(e) => setPerson(e.target.value)}
             placeholder="Nome da pessoa prejudicada"
-            className="w-full border rounded-lg p-2 text-sm"
+            className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -129,7 +129,7 @@ export default function Passos89() {
             value={harmDescription}
             onChange={(e) => setHarmDescription(e.target.value)}
             placeholder="Descreva brevemente o que aconteceu..."
-            className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400"
+            className="w-full rounded-lg border border-border bg-secondary/60 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -141,7 +141,7 @@ export default function Passos89() {
               value={reparationType}
               onChange={(e) => setReparationType(e.target.value)}
               placeholder="Ex: Pedido de desculpas, reparação financeira..."
-              className="w-full border rounded-lg p-2 text-sm"
+              className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
@@ -150,7 +150,7 @@ export default function Passos89() {
               type="date"
               value={plannedDate}
               onChange={(e) => setPlannedDate(e.target.value)}
-              className="w-full border rounded-lg p-2 text-sm"
+              className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
@@ -158,52 +158,51 @@ export default function Passos89() {
         <Button
           onClick={handleSalvar}
           disabled={salvando}
-          className={`w-full py-3 rounded-lg text-white font-semibold transition ${
-            salvando ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          }`}
+          className="w-full py-3 rounded-lg font-semibold transition"
         >
           {salvando ? "Salvando..." : "Adicionar à Lista"}
         </Button>
       </div>
 
-      <div className="bg-white shadow rounded-xl p-6">
-        <h2 className="text-xl font-bold mb-4">📋 Minha Lista de Reparação</h2>
+      <div className="aurora-glass rounded-3xl p-6">
+        <h2 className="text-xl font-display font-bold aurora-text-glow mb-4">📋 Minha Lista de Reparação</h2>
         {carregando ? (
-          <p className="text-center text-gray-500 py-4">Carregando...</p>
+          <p className="text-center text-muted-foreground py-4">Carregando...</p>
         ) : itens.length === 0 ? (
-          <p className="text-center text-gray-500 py-4">Nenhum item registrado ainda.</p>
+          <p className="text-center text-muted-foreground py-4">Nenhum item registrado ainda.</p>
         ) : (
           <div className="space-y-3">
             {itens.map((item) => (
               <div
                 key={item.id}
-                className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                className="aurora-glass rounded-2xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
               >
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium">{item.person}</p>
                     <span
-                      className={`text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 ${STATUS_COLOR[item.status]}`}
+                      className="text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5"
+                      style={STATUS_COLOR[item.status]}
                     >
                       {STATUS_LABEL[item.status]}
                     </span>
                   </div>
                   {item.harm_description && (
-                    <p className="text-sm text-gray-600 mt-1">{item.harm_description}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{item.harm_description}</p>
                   )}
                   {item.reparation_type && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Reparação: {item.reparation_type}
                     </p>
                   )}
                   {item.planned_date && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Planejado para{" "}
                       {new Date(`${item.planned_date}T00:00:00`).toLocaleDateString("pt-BR")}
                     </p>
                   )}
                   {item.completed_at && (
-                    <p className="text-xs text-green-600 mt-1">
+                    <p className="text-xs mt-1" style={{ color: "oklch(0.75 0.15 150)" }}>
                       Concluído em {new Date(item.completed_at).toLocaleDateString("pt-BR")}
                     </p>
                   )}

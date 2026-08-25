@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,126 +8,73 @@ All colors MUST be HSL.
 */
 
 @layer base {
+  /* 🎨 Paleta "Aurora Recovery" (redesenho do Lovable) aplicada aos tokens
+     padrão do design system — assim TODOS os componentes shadcn/ui (Button,
+     Card, Dialog, Input, Alert etc.) e todas as telas do app herdam
+     automaticamente os azuis/violetas futuristas. Os valores usam oklch()
+     diretamente (ver tailwind.config.ts, que referencia var(--x) sem hsl()). */
   :root {
-    --background: 210 25% 97%;
-    --foreground: 220 15% 20%;
+    --background: oklch(0.16 0.045 274);
+    --foreground: oklch(0.97 0.012 280);
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 20%;
+    --card: oklch(0.22 0.055 275 / 65%);
+    --card-foreground: oklch(0.97 0.012 280);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 20%;
+    --popover: oklch(0.2 0.05 275);
+    --popover-foreground: oklch(0.97 0.012 280);
 
-    --primary: 220 70% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary: oklch(0.62 0.22 285);
+    --primary-foreground: oklch(0.98 0.01 280);
 
-    --secondary: 160 50% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: oklch(0.3 0.07 272);
+    --secondary-foreground: oklch(0.97 0.012 280);
 
-    --muted: 210 20% 90%;
-    --muted-foreground: 220 10% 45%;
+    --muted: oklch(0.28 0.055 272);
+    --muted-foreground: oklch(0.76 0.045 278);
 
-    --accent: 260 40% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: oklch(0.65 0.19 245);
+    --accent-foreground: oklch(0.98 0.01 280);
 
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: oklch(0.62 0.24 25);
+    --destructive-foreground: oklch(0.98 0.01 280);
 
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 220 70% 45%;
+    --border: oklch(0.72 0.09 280 / 18%);
+    --input: oklch(0.72 0.09 280 / 22%);
+    --ring: oklch(0.68 0.19 288);
 
-    --radius: 0.75rem;
-    
-    --success: 160 50% 45%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 35 90% 55%;
-    --warning-foreground: 0 0% 100%;
-    
-    --info: 200 70% 50%;
-    --info-foreground: 0 0% 100%;
-    
-    --gradient-calm: linear-gradient(135deg, hsl(220 70% 45%) 0%, hsl(260 40% 50%) 100%);
-    --gradient-hope: linear-gradient(135deg, hsl(160 50% 45%) 0%, hsl(200 70% 50%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(210 25% 97%) 0%, hsl(220 20% 95%) 100%);
-    
-    --shadow-soft: 0 2px 8px -2px hsl(220 70% 45% / 0.08);
-    --shadow-medium: 0 4px 16px -4px hsl(220 70% 45% / 0.12);
-    --shadow-strong: 0 8px 24px -8px hsl(220 70% 45% / 0.16);
-    
+    --radius: 1rem;
+
+    --success: oklch(0.7 0.17 150);
+    --success-foreground: oklch(0.15 0.03 150);
+
+    --warning: oklch(0.75 0.15 85);
+    --warning-foreground: oklch(0.2 0.05 85);
+
+    --info: oklch(0.78 0.15 205);
+    --info-foreground: oklch(0.15 0.03 205);
+
+    --violet: oklch(0.66 0.22 300);
+    --cyan: oklch(0.78 0.15 205);
+    --magenta: oklch(0.68 0.24 340);
+
+    --gradient-calm: var(--aurora-gradient);
+    --gradient-hope: linear-gradient(135deg, oklch(0.7 0.17 150) 0%, oklch(0.78 0.15 205) 100%);
+    --gradient-subtle: var(--aurora-gradient-nebula);
+
+    --shadow-soft: var(--aurora-shadow-glow);
+    --shadow-medium: var(--aurora-shadow-glow);
+    --shadow-strong: var(--aurora-shadow-glow-strong);
+
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 220 20% 12%;
-    --foreground: 210 20% 92%;
-
-    --card: 220 18% 16%;
-    --card-foreground: 210 20% 92%;
-
-    --popover: 220 18% 16%;
-    --popover-foreground: 210 20% 92%;
-
-    --primary: 220 70% 55%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 160 45% 50%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 220 15% 22%;
-    --muted-foreground: 210 15% 65%;
-
-    --accent: 260 40% 60%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 15% 24%;
-    --input: 220 15% 24%;
-    --ring: 220 70% 55%;
-    
-    --success: 160 45% 50%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 35 85% 60%;
-    --warning-foreground: 0 0% 100%;
-    
-    --info: 200 70% 60%;
-    --info-foreground: 0 0% 100%;
-    
-    --gradient-calm: linear-gradient(135deg, hsl(220 70% 55%) 0%, hsl(260 40% 60%) 100%);
-    --gradient-hope: linear-gradient(135deg, hsl(160 45% 50%) 0%, hsl(200 70% 60%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(220 20% 12%) 0%, hsl(220 18% 16%) 100%);
-    
-    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.2);
-    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.3);
-    --shadow-strong: 0 8px 24px -8px hsl(0 0% 0% / 0.4);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: oklch(0.18 0.05 276 / 92%);
+    --sidebar-foreground: oklch(0.95 0.015 280);
+    --sidebar-primary: oklch(0.66 0.22 295);
+    --sidebar-primary-foreground: oklch(0.98 0.01 280);
+    --sidebar-accent: oklch(0.28 0.07 278);
+    --sidebar-accent-foreground: oklch(0.98 0.01 280);
+    --sidebar-border: oklch(0.72 0.09 280 / 16%);
+    --sidebar-ring: oklch(0.68 0.19 288);
   }
 }
 
@@ -137,5 +85,125 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-aurora-sans);
+    background-image: var(--aurora-gradient-nebula);
+    background-attachment: fixed;
   }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-aurora-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ============================================================================
+   Aurora Recovery — paleta escopada para o Painel Lateral e o Dashboard
+   (redesenhados no Lovable). Tokens com prefixo "--aurora-" para não colidir
+   com o design system padrão (--background, --primary, etc.) usado no resto
+   do app — assim as outras telas continuam exatamente como estavam.
+   ========================================================================= */
+
+:root {
+  --aurora-background: oklch(0.16 0.045 274);
+  --aurora-foreground: oklch(0.97 0.012 280);
+  --aurora-card: oklch(0.22 0.055 275 / 65%);
+  --aurora-primary: oklch(0.62 0.22 285);
+  --aurora-primary-foreground: oklch(0.98 0.01 280);
+  --aurora-secondary: oklch(0.3 0.07 272);
+  --aurora-muted: oklch(0.28 0.055 272);
+  --aurora-muted-foreground: oklch(0.76 0.045 278);
+  --aurora-accent: oklch(0.65 0.19 245);
+  --aurora-border: oklch(0.72 0.09 280 / 18%);
+  --aurora-ring: oklch(0.68 0.19 288);
+
+  --aurora-violet: oklch(0.66 0.22 300);
+  --aurora-cyan: oklch(0.78 0.15 205);
+  --aurora-magenta: oklch(0.68 0.24 340);
+  --aurora-surface: oklch(0.21 0.05 275 / 70%);
+  --aurora-surface-strong: oklch(0.25 0.06 276 / 90%);
+
+  --aurora-sidebar: oklch(0.18 0.05 276 / 92%);
+  --aurora-sidebar-foreground: oklch(0.95 0.015 280);
+  --aurora-sidebar-accent: oklch(0.28 0.07 278);
+  --aurora-sidebar-border: oklch(0.72 0.09 280 / 16%);
+
+  --aurora-gradient: linear-gradient(
+    135deg,
+    oklch(0.62 0.22 288) 0%,
+    oklch(0.58 0.2 258) 45%,
+    oklch(0.72 0.16 205) 100%
+  );
+  --aurora-gradient-nebula: radial-gradient(
+      90% 60% at 12% -10%,
+      oklch(0.45 0.19 300 / 45%) 0%,
+      transparent 60%
+    ),
+    radial-gradient(80% 60% at 100% 0%, oklch(0.42 0.17 245 / 40%) 0%, transparent 60%),
+    radial-gradient(70% 70% at 60% 110%, oklch(0.4 0.15 330 / 28%) 0%, transparent 65%);
+
+  --aurora-shadow-glow: 0 0 0 1px oklch(0.72 0.09 280 / 14%),
+    0 24px 60px -24px oklch(0.5 0.22 288 / 55%);
+  --aurora-shadow-glow-strong: 0 0 40px -8px oklch(0.66 0.24 295 / 55%),
+    0 28px 70px -28px oklch(0.5 0.22 288 / 70%);
+  --aurora-text-glow: 0 0 18px oklch(0.7 0.2 292 / 45%), 0 2px 10px oklch(0.1 0.05 280 / 65%);
+  --aurora-text-glow-soft: 0 1px 8px oklch(0.1 0.05 280 / 70%);
+
+  --font-aurora-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-aurora-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+.aurora-shell {
+  background-color: var(--aurora-background);
+  background-image: var(--aurora-gradient-nebula);
+  background-attachment: fixed;
+  color: var(--aurora-foreground);
+  font-family: var(--font-aurora-sans);
+}
+
+.aurora-shell h1,
+.aurora-shell h2,
+.aurora-shell h3,
+.aurora-shell h4 {
+  font-family: var(--font-aurora-display);
+  letter-spacing: -0.02em;
+}
+
+.aurora-font-display {
+  font-family: var(--font-aurora-display);
+  letter-spacing: -0.02em;
+}
+
+.aurora-glass {
+  background: var(--aurora-surface);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--aurora-border);
+  box-shadow: var(--aurora-shadow-glow);
+}
+
+.aurora-glass-strong {
+  background: var(--aurora-surface-strong);
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--aurora-border);
+  box-shadow: var(--aurora-shadow-glow-strong);
+}
+
+.aurora-text-glow {
+  text-shadow: var(--aurora-text-glow);
+}
+
+.aurora-text-glow-soft {
+  text-shadow: var(--aurora-text-glow-soft);
+}
+
+.aurora-gradient-bg {
+  background-image: var(--aurora-gradient);
+}
+
+.aurora-grid-noise {
+  background-image: linear-gradient(to right, oklch(0.72 0.09 280 / 8%) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.72 0.09 280 / 8%) 1px, transparent 1px);
+  background-size: 44px 44px;
 }

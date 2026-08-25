@@ -1,14 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { Heart, PlusCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Header from "../components/Header";
 
 const Header = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-card/80 shadow-sm backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo / título à esquerda */}
         <Link
@@ -16,7 +15,7 @@ const Header = () => {
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
           <Heart className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-semibold text-foreground">Prevenção Recaídas</h1>
+          <h1 className="text-xl font-display font-semibold text-foreground aurora-text-glow">Prevenção Recaídas</h1>
         </Link>
 
         {/* Botões à direita */}
@@ -30,11 +29,11 @@ const Header = () => {
           </Button>
 
           <Button
-            variant={isActive("/registrar") ? "default" : "ghost"}
+            variant={isActive("/registros") ? "default" : "ghost"}
             size="sm"
             asChild
           >
-            <Link to="/registrar">
+            <Link to="/registros">
               <PlusCircle className="mr-1 h-4 w-4" />
               Registrar
             </Link>

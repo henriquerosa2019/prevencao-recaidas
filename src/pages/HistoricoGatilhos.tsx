@@ -106,21 +106,21 @@ export default function HistoricoGatilhos() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-xl md:text-2xl font-bold">📜 Histórico de Gatilhos</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-xl md:text-2xl font-display font-bold aurora-text-glow">📜 Histórico de Gatilhos</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Filtre por tipo de gatilho e por dia da semana. O ranking abaixo é sempre
           ordenado do gatilho mais recorrente para o menos recorrente.
         </p>
       </div>
 
       {/* 🎛️ Filtros */}
-      <div className="rounded-2xl shadow-sm border border-gray-200 bg-white p-4 flex flex-wrap gap-4 items-end">
+      <div className="aurora-glass rounded-3xl p-4 flex flex-wrap gap-4 items-end">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Tag</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Tag</label>
           <select
             value={filtroTag}
             onChange={(e) => setFiltroTag(e.target.value)}
-            className="border rounded-lg p-2 text-sm min-w-[220px]"
+            className="rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground min-w-[220px] focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="todos">Todos os gatilhos</option>
             {gatilhosDisponiveis.map((g) => (
@@ -132,11 +132,11 @@ export default function HistoricoGatilhos() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Dia</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Dia</label>
           <select
             value={filtroDia}
             onChange={(e) => setFiltroDia(e.target.value)}
-            className="border rounded-lg p-2 text-sm min-w-[180px]"
+            className="rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground min-w-[180px] focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="todos">Todos os dias</option>
             {DIAS.map((dia, i) => (
@@ -153,34 +153,34 @@ export default function HistoricoGatilhos() {
               setFiltroTag("todos");
               setFiltroDia("todos");
             }}
-            className="px-3 py-2 rounded-lg border text-sm text-gray-600 hover:bg-gray-100"
+            className="aurora-glass rounded-lg px-3 py-2 text-sm hover:brightness-125 transition"
           >
             Limpar filtros
           </button>
         )}
 
-        <div className="ml-auto text-sm text-gray-500">
+        <div className="ml-auto text-sm text-muted-foreground">
           {filtrados.length} registro{filtrados.length === 1 ? "" : "s"} encontrado
           {filtrados.length === 1 ? "" : "s"}
         </div>
       </div>
 
       {loading ? (
-        <p className="text-center text-gray-500">Carregando...</p>
+        <p className="text-center text-muted-foreground">Carregando...</p>
       ) : (
         <>
           {/* 🏆 Ranking (maior → menor) */}
-          <div className="rounded-2xl shadow-sm border border-gray-200 bg-white p-4 md:p-6">
-            <h2 className="text-lg font-semibold mb-3">Ranking de Gatilhos</h2>
+          <div className="aurora-glass rounded-3xl p-4 md:p-6">
+            <h2 className="text-lg font-display font-semibold mb-3 aurora-text-glow">Ranking de Gatilhos</h2>
             {ranking.length === 0 ? (
-              <p className="text-sm text-gray-500">Nenhum registro para os filtros selecionados.</p>
+              <p className="text-sm text-muted-foreground">Nenhum registro para os filtros selecionados.</p>
             ) : (
               <div className="space-y-2">
                 {ranking.map((r, i) => {
                   const max = ranking[0].ocorrencias;
                   return (
                     <div key={r.gatilho} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-400 w-5">{i + 1}</span>
+                      <span className="text-xs text-muted-foreground w-5">{i + 1}</span>
                       <span className="text-sm w-44 shrink-0 truncate flex items-center gap-1.5">
                         <span
                           className="inline-block w-2 h-2 rounded-full"
@@ -188,7 +188,10 @@ export default function HistoricoGatilhos() {
                         />
                         {r.gatilho}
                       </span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="flex-1 rounded-full h-3 overflow-hidden"
+                        style={{ backgroundColor: "var(--aurora-secondary)" }}
+                      >
                         <div
                           className="h-3 rounded-full"
                           style={{
@@ -208,17 +211,17 @@ export default function HistoricoGatilhos() {
           </div>
 
           {/* 📋 Registros detalhados */}
-          <div className="rounded-2xl shadow-sm border border-gray-200 bg-white p-4 md:p-6">
-            <h2 className="text-lg font-semibold mb-3">Registros</h2>
+          <div className="aurora-glass rounded-3xl p-4 md:p-6">
+            <h2 className="text-lg font-display font-semibold mb-3 aurora-text-glow">Registros</h2>
             {registrosOrdenados.length === 0 ? (
-              <p className="text-sm text-gray-500 py-4 text-center">
+              <p className="text-sm text-muted-foreground py-4 text-center">
                 Nenhum registro encontrado para os filtros selecionados.
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500 border-b">
+                    <tr className="text-left text-muted-foreground border-b border-border">
                       <th className="py-2 pr-4">Data/Hora</th>
                       <th className="py-2 pr-4">Gatilho</th>
                       <th className="py-2 pr-4">Intensidade</th>
@@ -227,7 +230,7 @@ export default function HistoricoGatilhos() {
                   </thead>
                   <tbody>
                     {registrosOrdenados.map((d, i) => (
-                      <tr key={i} className="border-b last:border-0">
+                      <tr key={i} className="border-b border-border last:border-0">
                         <td className="py-2 pr-4 whitespace-nowrap">
                           {new Date(d.created_at).toLocaleString("pt-BR", {
                             timeZone: "America/Sao_Paulo",
@@ -241,7 +244,7 @@ export default function HistoricoGatilhos() {
                           {d.gatilho}
                         </td>
                         <td className="py-2 pr-4">{d.intensity}/10</td>
-                        <td className="py-2 text-gray-600">
+                        <td className="py-2 text-muted-foreground">
                           {d.note && d.note !== "EMPTY" ? d.note : "—"}
                         </td>
                       </tr>

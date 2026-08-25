@@ -155,7 +155,7 @@ export default function Config() {
 
   return (
     <>
-      <div className="max-w-3xl mx-auto bg-white shadow rounded-xl p-6 mt-6 space-y-8">
+      <div className="max-w-3xl mx-auto aurora-glass rounded-3xl p-6 mt-6 space-y-8">
         {/* 🔗 Navegação */}
         <div className="flex justify-between mb-4">
           <Button variant="outline" onClick={() => navigate("/dashboard")}>
@@ -167,12 +167,12 @@ export default function Config() {
         </div>
 
         {/* Data de início da recuperação */}
-        <section className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h2 className="text-xl font-bold mb-2">🏆 Sua Data de Início</h2>
-          <p className="text-sm text-gray-600 mb-3">
+        <section className="aurora-glass rounded-lg p-4">
+          <h2 className="text-xl font-display font-bold aurora-text-glow mb-2">🏆 Sua Data de Início</h2>
+          <p className="text-sm text-muted-foreground mb-3">
             Usada para calcular seu contador de dias limpo no Dashboard.
           </p>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm font-medium mb-1 text-foreground">
             Data em que você começou sua recuperação
           </label>
           <input
@@ -180,22 +180,22 @@ export default function Config() {
             value={dataInicio}
             max={new Date().toISOString().slice(0, 10)}
             onChange={(e) => setDataInicio(e.target.value)}
-            className="w-full border rounded-lg p-2 text-sm"
+            className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </section>
 
         {/* Preferências */}
         <section>
-          <h2 className="text-xl font-bold mb-2">Preferências do Dashboard</h2>
-          <p className="text-sm text-gray-600 mb-4">
+          <h2 className="text-xl font-display font-bold aurora-text-glow mb-2">Preferências do Dashboard</h2>
+          <p className="text-sm text-muted-foreground mb-4">
             Configure como os gráficos são exibidos por padrão.
           </p>
 
-          <label className="block text-sm font-medium">Período padrão dos gráficos</label>
+          <label className="block text-sm font-medium text-foreground">Período padrão dos gráficos</label>
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
-            className="w-full border rounded-lg p-2 text-sm mb-4"
+            className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring mb-4"
           >
             <option value="7d">Últimos 7 dias</option>
             <option value="14d">Últimos 14 dias</option>
@@ -207,15 +207,16 @@ export default function Config() {
               type="checkbox"
               checked={ativarAlertas}
               onChange={(e) => setAtivarAlertas(e.target.checked)}
+              className="accent-primary"
             />
-            <span className="text-sm">Ativar alertas e lembretes</span>
+            <span className="text-sm text-foreground">Ativar alertas e lembretes</span>
           </label>
         </section>
 
         {/* Plano de Prevenção */}
         <section>
-          <h2 className="text-xl font-bold mb-2">Plano de Prevenção</h2>
-          <p className="text-sm text-gray-600 mb-3">
+          <h2 className="text-xl font-display font-bold aurora-text-glow mb-2">Plano de Prevenção</h2>
+          <p className="text-sm text-muted-foreground mb-3">
             Liste ações que ajudam você a lidar com cravings.
           </p>
           <textarea
@@ -223,42 +224,42 @@ export default function Config() {
             value={plano}
             onChange={(e) => setPlano(e.target.value)}
             placeholder="Exemplo: Ligar para meu padrinho, respirar fundo, orar, escrever, etc."
-            className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400"
+            className="w-full rounded-lg border border-border bg-secondary/60 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Este plano ficará disponível rapidamente quando você mais precisar (inclusive no
             botão de emergência).
           </p>
         </section>
 
         {/* 📱 Contato Padrinho/Madrinha */}
-        <section className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h2 className="text-lg font-bold mb-2">📱 Padrinho/Madrinha</h2>
-          <p className="text-sm text-gray-600 mb-3">
+        <section className="aurora-glass rounded-lg p-4">
+          <h2 className="text-lg font-display font-bold aurora-text-glow mb-2">📱 Padrinho/Madrinha</h2>
+          <p className="text-sm text-muted-foreground mb-3">
             Salve o WhatsApp do seu padrinho ou madrinha para falar com ele(a) rapidamente em
             momentos de fissura.
           </p>
-          <label className="block text-sm font-medium mb-1">Número de WhatsApp</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">Número de WhatsApp</label>
           <input
             type="tel"
             value={padrinhoWhatsapp}
             onChange={(e) => setPadrinhoWhatsapp(e.target.value)}
             placeholder="Ex: (11) 91234-5678"
-            className="w-full border rounded-lg p-2 text-sm mb-3"
+            className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring mb-3"
           />
           <Button
             onClick={handleAdicionarPadrinho}
             disabled={abrindoWhatsapp}
-            className="w-full py-2.5 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700"
+            className="w-full py-2.5 rounded-lg font-semibold"
           >
             {abrindoWhatsapp ? "Salvando..." : "💬 Adicionar Contato Padrinho/Madrinha"}
           </Button>
         </section>
 
         {/* Sobre seus dados */}
-        <section className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="font-medium text-blue-700 mb-1">ℹ️ Sobre seus dados</p>
-          <p className="text-sm text-gray-700">
+        <section className="aurora-glass rounded-lg p-4">
+          <p className="font-medium aurora-text-glow-soft mb-1" style={{ color: "var(--aurora-primary)" }}>ℹ️ Sobre seus dados</p>
+          <p className="text-sm text-muted-foreground">
             Todos os seus registros estão armazenados de forma segura e confiável, sob a proteção
             da LGPD (Lei Geral de Proteção de Dados), e nunca são compartilhados.
           </p>
@@ -269,15 +270,16 @@ export default function Config() {
           <Button
             onClick={handleSalvar}
             disabled={salvando}
-            className={`w-full py-3 rounded-lg text-white font-semibold transition ${
-              salvando ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className="w-full py-3 rounded-lg font-semibold transition"
           >
             {salvando ? "Salvando..." : "Salvar Configurações"}
           </Button>
 
           {salvo && (
-            <p className="text-center text-green-600 text-sm font-medium">
+            <p
+              className="text-center text-sm font-medium"
+              style={{ color: "oklch(0.85 0.15 150)" }}
+            >
               ✅ Configurações salvas com sucesso!
             </p>
           )}

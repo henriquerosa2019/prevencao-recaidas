@@ -54,12 +54,13 @@ export default function Abertura() {
   }, [navigate]);
 
   return (
-    <div className="flex flex-col items-center justify-between h-screen bg-gradient-to-b from-blue-50 to-blue-100 text-center p-6">
+    <div className="aurora-shell aurora-grid-noise flex flex-col items-center justify-between h-screen text-center p-6">
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.p
             key="carregando"
-            className="text-gray-600 text-lg"
+            className="text-lg"
+            style={{ color: "var(--aurora-muted-foreground)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -75,12 +76,13 @@ export default function Abertura() {
             transition={{ duration: 1 }}
             className="max-w-lg flex-1 flex flex-col justify-center"
           >
-            <h1 className="text-2xl font-semibold mb-4">Mensagem do Dia</h1>
-            <p className="text-gray-800 text-lg italic mb-8">{mensagem}</p>
+            <h1 className="text-2xl font-display font-semibold mb-4 aurora-text-glow">Mensagem do Dia</h1>
+            <p className="text-lg italic mb-8" style={{ color: "var(--aurora-foreground)" }}>{mensagem}</p>
 
             <Button
               onClick={() => navigate("/dashboard")}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow"
+              className="px-6 py-2 rounded-lg shadow"
+              style={{ backgroundImage: "var(--aurora-gradient)", color: "var(--aurora-primary-foreground)" }}
             >
               Pular Abertura
             </Button>

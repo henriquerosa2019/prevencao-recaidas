@@ -101,22 +101,22 @@ export default function Reunioes() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl bg-white shadow border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-blue-700">{contadores.mes}</p>
-          <p className="text-xs text-gray-500 mt-1">Este mês</p>
+        <div className="aurora-glass rounded-2xl p-4 text-center">
+          <p className="text-2xl font-display font-bold aurora-text-glow">{contadores.mes}</p>
+          <p className="text-xs text-muted-foreground mt-1">Este mês</p>
         </div>
-        <div className="rounded-xl bg-white shadow border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-blue-700">{contadores.ano}</p>
-          <p className="text-xs text-gray-500 mt-1">Este ano</p>
+        <div className="aurora-glass rounded-2xl p-4 text-center">
+          <p className="text-2xl font-display font-bold aurora-text-glow">{contadores.ano}</p>
+          <p className="text-xs text-muted-foreground mt-1">Este ano</p>
         </div>
-        <div className="rounded-xl bg-white shadow border border-gray-200 p-4 text-center">
-          <p className="text-2xl font-bold text-blue-700">{contadores.total}</p>
-          <p className="text-xs text-gray-500 mt-1">Total registrado</p>
+        <div className="aurora-glass rounded-2xl p-4 text-center">
+          <p className="text-2xl font-display font-bold aurora-text-glow">{contadores.total}</p>
+          <p className="text-xs text-muted-foreground mt-1">Total registrado</p>
         </div>
       </div>
 
-      <div className="bg-white shadow rounded-xl p-6 space-y-4">
-        <h2 className="text-xl font-bold">✍️ Registrar Reunião</h2>
+      <div className="aurora-glass rounded-3xl p-6 space-y-4">
+        <h2 className="text-xl font-display font-bold aurora-text-glow">✍️ Registrar Reunião</h2>
 
         <div className="grid md:grid-cols-2 gap-4">
           <div>
@@ -125,7 +125,7 @@ export default function Reunioes() {
               type="datetime-local"
               value={meetingDate}
               onChange={(e) => setMeetingDate(e.target.value)}
-              className="w-full border rounded-lg p-2 text-sm"
+              className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
@@ -133,7 +133,7 @@ export default function Reunioes() {
             <select
               value={fellowship}
               onChange={(e) => setFellowship(e.target.value)}
-              className="w-full border rounded-lg p-2 text-sm"
+              className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               {FELLOWSHIPS.map((f) => (
                 <option key={f} value={f}>{f}</option>
@@ -150,7 +150,7 @@ export default function Reunioes() {
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder="Ex: Grupo Esperança"
-              className="w-full border rounded-lg p-2 text-sm"
+              className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
@@ -158,7 +158,7 @@ export default function Reunioes() {
             <select
               value={meetingType}
               onChange={(e) => setMeetingType(e.target.value)}
-              className="w-full border rounded-lg p-2 text-sm"
+              className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               {MEETING_TYPES.map((t) => (
                 <option key={t} value={t}>{t}</option>
@@ -176,6 +176,7 @@ export default function Reunioes() {
                   type="checkbox"
                   checked={services.includes(s)}
                   onChange={() => toggleService(s)}
+                  className="accent-primary"
                 />
                 {s}
               </label>
@@ -190,32 +191,30 @@ export default function Reunioes() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="O que essa reunião te trouxe hoje?"
-            className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400"
+            className="w-full rounded-lg border border-border bg-secondary/60 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
         <Button
           onClick={handleSalvar}
           disabled={salvando}
-          className={`w-full py-3 rounded-lg text-white font-semibold transition ${
-            salvando ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          }`}
+          className="w-full py-3 rounded-lg font-semibold transition"
         >
           {salvando ? "Salvando..." : "Salvar Reunião"}
         </Button>
       </div>
 
-      <div className="bg-white shadow rounded-xl p-6">
-        <h2 className="text-xl font-bold mb-4">📋 Histórico de Reuniões</h2>
+      <div className="aurora-glass rounded-3xl p-6">
+        <h2 className="text-xl font-display font-bold aurora-text-glow mb-4">📋 Histórico de Reuniões</h2>
         {carregando ? (
-          <p className="text-center text-gray-500 py-4">Carregando...</p>
+          <p className="text-center text-muted-foreground py-4">Carregando...</p>
         ) : historico.length === 0 ? (
-          <p className="text-center text-gray-500 py-4">Nenhuma reunião registrada ainda.</p>
+          <p className="text-center text-muted-foreground py-4">Nenhuma reunião registrada ainda.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b">
+                <tr className="text-left text-muted-foreground border-b border-border">
                   <th className="py-2 pr-4">Data</th>
                   <th className="py-2 pr-4">Irmandade</th>
                   <th className="py-2 pr-4">Grupo</th>
@@ -225,7 +224,7 @@ export default function Reunioes() {
               </thead>
               <tbody>
                 {historico.map((h) => (
-                  <tr key={h.id} className="border-b last:border-0">
+                  <tr key={h.id} className="border-b border-border last:border-0">
                     <td className="py-2 pr-4 whitespace-nowrap">
                       {new Date(h.meeting_date).toLocaleString("pt-BR", {
                         timeZone: "America/Sao_Paulo",
@@ -234,7 +233,7 @@ export default function Reunioes() {
                     <td className="py-2 pr-4">{h.fellowship}</td>
                     <td className="py-2 pr-4">{h.group_name || "—"}</td>
                     <td className="py-2 pr-4">{h.meeting_type || "—"}</td>
-                    <td className="py-2 text-gray-600">{h.service || "—"}</td>
+                    <td className="py-2 text-muted-foreground">{h.service || "—"}</td>
                   </tr>
                 ))}
               </tbody>

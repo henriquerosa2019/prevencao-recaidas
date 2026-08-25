@@ -23,7 +23,7 @@ export default function App() {
 
   return (
     <SosProvider>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-background aurora-grid-noise">
         {/* ✅ Esconde Sidebar na abertura */}
         {!isAbertura && <Sidebar />}
 
