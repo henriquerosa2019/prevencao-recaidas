@@ -933,15 +933,24 @@ export default function UrgeDashboardMVP() {
               footer="O tamanho de cada célula é proporcional ao número de registros do dia."
             >
               <div className="h-[420px] md:h-[520px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <Treemap
-                    data={diaTreemapData}
-                    dataKey="value"
-                    nameKey="name"
-                    isAnimationActive={false}
-                    content={<TreemapCellContent />}
-                  />
-                </ResponsiveContainer>
+                {diaTreemapData.length === 0 ? (
+                  <div
+                    className="flex h-full items-center justify-center rounded-2xl text-center text-sm"
+                    style={{ border: "1px dashed var(--aurora-border)", color: "var(--aurora-muted-foreground)" }}
+                  >
+                    Sem registros no período selecionado.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <Treemap
+                      data={diaTreemapData}
+                      dataKey="value"
+                      nameKey="name"
+                      isAnimationActive={false}
+                      content={<TreemapCellContent />}
+                    />
+                  </ResponsiveContainer>
+                )}
               </div>
             </Panel>
 
@@ -952,15 +961,24 @@ export default function UrgeDashboardMVP() {
               footer="O tamanho de cada célula é proporcional ao número de registros do horário."
             >
               <div className="h-[420px] md:h-[520px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <Treemap
-                    data={horaTreemapData}
-                    dataKey="value"
-                    nameKey="name"
-                    isAnimationActive={false}
-                    content={<TreemapCellContent />}
-                  />
-                </ResponsiveContainer>
+                {horaTreemapData.length === 0 ? (
+                  <div
+                    className="flex h-full items-center justify-center rounded-2xl text-center text-sm"
+                    style={{ border: "1px dashed var(--aurora-border)", color: "var(--aurora-muted-foreground)" }}
+                  >
+                    Sem registros no período selecionado.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <Treemap
+                      data={horaTreemapData}
+                      dataKey="value"
+                      nameKey="name"
+                      isAnimationActive={false}
+                      content={<TreemapCellContent />}
+                    />
+                  </ResponsiveContainer>
+                )}
               </div>
             </Panel>
 

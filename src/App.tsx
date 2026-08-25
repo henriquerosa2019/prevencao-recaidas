@@ -15,6 +15,7 @@ import Header from "./components/Layout/Header";
 import Footer from "./components/Footer";
 import SosButton from "./components/SosButton";
 import { SosProvider } from "./lib/sosContext";
+import { SidebarMenuProvider } from "./lib/sidebarContext";
 
 export default function App() {
   const location = useLocation();
@@ -22,16 +23,17 @@ export default function App() {
   const isAbertura = location.pathname === "/";
 
   return (
-    <SosProvider>
-      <div className="flex min-h-screen bg-background aurora-grid-noise">
-        {/* ✅ Esconde Sidebar na abertura */}
-        {!isAbertura && <Sidebar />}
+    <SidebarMenuProvider>
+      <SosProvider>
+        <div className="flex min-h-screen bg-background aurora-grid-noise">
+          {/* ✅ Esconde Sidebar na abertura */}
+          {!isAbertura && <Sidebar />}
 
-        <div className="flex-1 flex flex-col">
-          {/* ✅ Esconde header na abertura */}
-          {!isAbertura && <Header />}
+          <div className="flex min-w-0 flex-1 flex-col">
+            {/* ✅ Esconde header na abertura */}
+            {!isAbertura && <Header />}
 
-          <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+            <main className="flex-1 p-4 md:p-6 overflow-y-auto overflow-x-hidden">
             <Routes>
               {/* ✅ Tela inicial com mensagem inspiradora */}
               <Route path="/" element={<Abertura />} />
@@ -59,15 +61,16 @@ export default function App() {
               {/* ✅ fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </main>
+            </main>
 
-          {/* ✅ Rodapé visível apenas fora da abertura */}
-          {!isAbertura && <Footer />}
+            {/* ✅ Rodapé visível apenas fora da abertura */}
+            {!isAbertura && <Footer />}
+          </div>
+
+          {/* ✅ Botão de emergência global (SOS) */}
+          {!isAbertura && <SosButton />}
         </div>
-
-        {/* ✅ Botão de emergência global (SOS) */}
-        {!isAbertura && <SosButton />}
-      </div>
-    </SosProvider>
+      </SosProvider>
+    </SidebarMenuProvider>
   );
 }
