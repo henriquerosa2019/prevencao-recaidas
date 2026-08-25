@@ -7,6 +7,7 @@ import { Activity, FileDown, Flame, ShieldCheck, Sparkles, Trophy } from "lucide
 import { supabase } from "@/lib/supabaseClient";
 import { cn } from "@/lib/utils";
 import PeriodoButtons from "@/components/PeriodoButtons";
+import { useAuth } from "@/lib/authContext";
 
 // 🎨 Dashboard redesenhado no Lovable — paleta "Aurora Recovery" (azuis e
 // violetas futuristas, vidro fosco, brilho neon). As cores usam variáveis
@@ -360,23 +361,26 @@ export default function UrgeDashboardMVP() {
   } | null>(null);
 
   const heatmapWrapRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) fetchData();
+  }, [user]);
 
   // 🏆 Contador de sobriedade + plano de prevenção (para o resumo/PDF)
   useEffect(() => {
+    if (!user) return;
     supabase
       .from("user_config")
       .select("sobriety_start_date, prevention_plan")
+      .eq("user_id", user.id)
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
         setSobrietyDate(data?.sobriety_start_date || null);
         setPreventionPlan(data?.prevention_plan?.trim() || null);
       });
-  }, []);
+  }, [user]);
 
   // Atualiza o contador a cada minuto
   useEffect(() => {
@@ -394,6 +398,7 @@ export default function UrgeDashboardMVP() {
   }, [sobrietyDate, now]);
 
   async function fetchData() {
+    if (!user) return;
     setLoading(true);
     const dataInicio = new Date();
     dataInicio.setDate(dataInicio.getDate() - 30);
@@ -401,6 +406,7 @@ export default function UrgeDashboardMVP() {
     const { data, error } = await supabase
       .from("urge_events")
       .select("created_at, trigger, intensity, note")
+      .eq("user_id", user.id)
       .gte("created_at", dataInicio.toISOString())
       .order("created_at", { ascending: true });
 

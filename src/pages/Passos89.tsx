@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { isTrialExpired, TRIAL_EXPIRED_MESSAGE } from "@/lib/trialGate";
+import { useAuth } from "@/lib/authContext";
 
 const STATUS_ORDER = ["em_preparacao", "pronto", "concluido"] as const;
 const STATUS_LABEL: Record<string, string> = {
@@ -27,16 +28,19 @@ export default function Passos89() {
   const [itens, setItens] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    carregarItens();
-  }, []);
+    if (user) carregarItens();
+  }, [user]);
 
   async function carregarItens() {
+    if (!user) return;
     setCarregando(true);
     const { data, error } = await supabase
       .from("step_inventory_89")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) console.error("Erro ao carregar lista de reparação:", error);
     else setItens(data || []);
@@ -44,13 +48,14 @@ export default function Passos89() {
   }
 
   async function handleSalvar() {
+    if (!user) return;
     if (!person.trim()) {
       toast({ title: "Informe o nome da pessoa antes de salvar.", duration: 3000 });
       return;
     }
-    // 🔒 8º/9º Passo fica protegido pelo período gratuito (veja
-    // src/lib/trialGate.ts — hoje sempre liberado, até existir login).
-    if (isTrialExpired()) {
+    // 🔒 8º/9º Passo fica protegido pelo período gratuito de 7 dias — veja
+    // src/lib/trialGate.ts.
+    if (isTrialExpired(user.created_at)) {
       toast({ title: TRIAL_EXPIRED_MESSAGE, duration: 4000 });
       return;
     }
@@ -58,6 +63,7 @@ export default function Passos89() {
     try {
       const { error } = await supabase.from("step_inventory_89").insert([
         {
+          user_id: user.id,
           person: person.trim(),
           harm_description: harmDescription.trim() || null,
           sponsor_suggestions: sponsorSuggestions.trim() || null,

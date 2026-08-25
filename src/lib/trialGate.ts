@@ -2,28 +2,24 @@
 //
 // 🔒 Controle do período gratuito de uso do app (preparação para a venda).
 //
-// Hoje o app ainda não tem contas/login — por isso a trava abaixo fica
-// sempre DESLIGADA (isTrialExpired() sempre retorna false) e ninguém é
-// bloqueado. O contador de 7 dias só passa a valer de verdade quando o
-// sistema de login/senha for implementado: nesse momento, troque a lógica
-// de isTrialExpired() para calcular a diferença entre hoje e a data de
-// criação da conta autenticada (ex.: supabase.auth.getUser() -> created_at)
-// e retornar true depois de TRIAL_FREE_DAYS dias corridos.
+// Agora que existe login (veja src/lib/authContext.tsx), o período gratuito
+// é contado a partir de `user.created_at` — a data em que a conta foi
+// criada no Supabase Auth. isTrialExpired() é uma função pura (não depende
+// de contexto/hooks) para ser fácil de testar e de chamar tanto dentro de
+// componentes quanto dentro de handlers de salvar.
 //
 // Todos os pontos do app que precisam respeitar o período gratuito (botões
-// de período do Dashboard, Plano de Prevenção, 4º/5º e 8º/9º Passo) já
-// chamam isTrialExpired() / TRIAL_EXPIRED_MESSAGE daqui — quando a trava for
-// ligada de verdade, ela passa a valer em todos esses lugares de uma vez.
+// de período do Dashboard, Plano de Prevenção, 4º/5º e 8º/9º Passo) chamam
+// isTrialExpired(user?.created_at) daqui.
 
 export const TRIAL_FREE_DAYS = 7;
 
 export const TRIAL_EXPIRED_MESSAGE = "Seu período gratuito expirou.";
 
-export function isTrialExpired(): boolean {
-  // TODO(login): quando existir autenticação, calcular a partir da data de
-  // criação da conta do usuário logado. Ex.:
-  //   const criadaEm = new Date(user.created_at);
-  //   const dias = (Date.now() - criadaEm.getTime()) / 86_400_000;
-  //   return dias > TRIAL_FREE_DAYS;
-  return false;
+export function isTrialExpired(accountCreatedAt: string | null | undefined): boolean {
+  if (!accountCreatedAt) return false; // sem conta carregada ainda — não bloqueia
+  const criadaEm = new Date(accountCreatedAt).getTime();
+  if (Number.isNaN(criadaEm)) return false;
+  const diasDesdeOCadastro = (Date.now() - criadaEm) / 86_400_000;
+  return diasDesdeOCadastro > TRIAL_FREE_DAYS;
 }

@@ -2,10 +2,12 @@
 //
 // 🕐 Seletor de período (7/14/30 dias) reutilizado em cada painel do
 // Dashboard. Clicar em 14d/30d respeita o período gratuito: enquanto o
-// trial não expirou (hoje, sempre — veja src/lib/trialGate.ts) o período
-// muda normalmente; quando expirar, mostra o aviso e mantém o período atual.
+// trial não expirou (7 dias a partir da criação da conta — veja
+// src/lib/trialGate.ts) o período muda normalmente; quando expirar, mostra
+// o aviso e mantém o período atual.
 
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/authContext";
 import { isTrialExpired, TRIAL_EXPIRED_MESSAGE } from "@/lib/trialGate";
 
 const OPCOES = ["7d", "14d", "30d"];
@@ -20,9 +22,10 @@ export default function PeriodoButtons({
   size?: "sm" | "md";
 }) {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   function handleClick(p: string) {
-    if (p !== "7d" && isTrialExpired()) {
+    if (p !== "7d" && isTrialExpired(user?.created_at)) {
       toast({ title: TRIAL_EXPIRED_MESSAGE, duration: 4000 });
       return;
     }

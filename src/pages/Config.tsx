@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { isTrialExpired, TRIAL_EXPIRED_MESSAGE } from "@/lib/trialGate";
+import { useAuth } from "@/lib/authContext";
 
 export default function Config() {
   const [periodo, setPeriodo] = useState("7d");
@@ -16,9 +17,11 @@ export default function Config() {
   const [abrindoWhatsapp, setAbrindoWhatsapp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // 🔹 Carrega a configuração existente (sem exigir user_id)
+  // 🔹 Carrega a configuração existente do usuário logado
   useEffect(() => {
+    if (!user) return;
     async function carregarConfig() {
       try {
         const { data, error } = await supabase
@@ -26,6 +29,7 @@ export default function Config() {
           .select(
             "default_period, alerts_enabled, prevention_plan, sobriety_start_date, sponsor_whatsapp"
           )
+          .eq("user_id", user!.id)
           .limit(1)
           .maybeSingle();
 
@@ -43,7 +47,7 @@ export default function Config() {
       }
     }
     carregarConfig();
-  }, []);
+  }, [user]);
 
   // 📱 Normaliza número de WhatsApp brasileiro (aceita com ou sem DDI/símbolos)
   function normalizarWhatsapp(numero: string) {
@@ -57,6 +61,7 @@ export default function Config() {
 
   // 📱 Salva o número (se necessário) e abre o WhatsApp imediatamente
   async function handleAdicionarPadrinho() {
+    if (!user) return;
     const numeroLimpo = normalizarWhatsapp(padrinhoWhatsapp);
     if (!numeroLimpo || numeroLimpo.length < 12) {
       toast({
@@ -72,6 +77,7 @@ export default function Config() {
       const { data: existente } = await supabase
         .from("user_config")
         .select("id")
+        .eq("user_id", user.id)
         .limit(1)
         .maybeSingle();
 
@@ -81,9 +87,13 @@ export default function Config() {
           .update({ sponsor_whatsapp: numeroLimpo, updated_at: new Date().toISOString() })
           .eq("id", existente.id);
       } else {
-        await supabase
-          .from("user_config")
-          .insert([{ sponsor_whatsapp: numeroLimpo, created_at: new Date().toISOString() }]);
+        await supabase.from("user_config").insert([
+          {
+            user_id: user.id,
+            sponsor_whatsapp: numeroLimpo,
+            created_at: new Date().toISOString(),
+          },
+        ]);
       }
     } catch (err) {
       console.error("Erro ao salvar contato do padrinho/madrinha:", err);
@@ -96,19 +106,21 @@ export default function Config() {
 
   // 🔹 Salvar ou atualizar configuração
   async function handleSalvar() {
-    // 🔒 Plano de Prevenção fica protegido pelo período gratuito (veja
-    // src/lib/trialGate.ts — hoje sempre liberado, até existir login).
-    if (isTrialExpired()) {
+    if (!user) return;
+    // 🔒 Plano de Prevenção (e o restante desta tela) fica protegido pelo
+    // período gratuito de 7 dias — veja src/lib/trialGate.ts.
+    if (isTrialExpired(user.created_at)) {
       toast({ title: TRIAL_EXPIRED_MESSAGE, duration: 4000 });
       return;
     }
     setSalvando(true);
     setSalvo(false);
     try {
-      // Verifica se já existe um registro
+      // Verifica se já existe um registro deste usuário
       const { data: existente } = await supabase
         .from("user_config")
         .select("id")
+        .eq("user_id", user.id)
         .limit(1)
         .maybeSingle();
 
@@ -131,6 +143,7 @@ export default function Config() {
       } else {
         const { error } = await supabase.from("user_config").insert([
           {
+            user_id: user.id,
             default_period: periodo,
             alerts_enabled: ativarAlertas,
             prevention_plan: plano.trim(),

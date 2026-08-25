@@ -22,6 +22,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { useSos } from "@/lib/sosContext";
 import { useSidebarMenu } from "@/lib/sidebarContext";
+import { useAuth } from "@/lib/authContext";
 import {
   Accordion,
   AccordionContent,
@@ -103,6 +104,7 @@ function ItemEmBreve({
 export default function Sidebar() {
   const { setOpen } = useSos();
   const { mobileOpen, setMobileOpen } = useSidebarMenu();
+  const { signOut } = useAuth();
   const location = useLocation();
 
   // 🖥️ "collapsed" só controla o modo ícone-only em telas md+ (tablet/PC).
@@ -290,7 +292,10 @@ export default function Sidebar() {
                 iconOnly ? "justify-center px-0" : ""
               }`}
               style={{ color: "var(--aurora-muted-foreground)" }}
-              onClick={() => alert("Sair (em breve)")}
+              onClick={() => {
+                setMobileOpen(false);
+                signOut();
+              }}
             >
               <LogOut className="h-4 w-4 shrink-0" />
               {!iconOnly && <span>Sair</span>}

@@ -2,17 +2,20 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Phone, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSos } from "@/lib/sosContext";
+import { useAuth } from "@/lib/authContext";
 
 export default function SosButton() {
   const { open, setOpen } = useSos();
+  const { user } = useAuth();
   const [plano, setPlano] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !user) return;
     let ativo = true;
     supabase
       .from("user_config")
       .select("prevention_plan")
+      .eq("user_id", user.id)
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
@@ -21,7 +24,7 @@ export default function SosButton() {
     return () => {
       ativo = false;
     };
-  }, [open]);
+  }, [open, user]);
 
   return (
     <>

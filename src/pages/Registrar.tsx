@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/authContext";
 import {
   Heart,
   PlayCircle,
@@ -34,9 +35,11 @@ export default function Registrar() {
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // 🔹 Verifica padrão de risco e dispara alerta (sem login)
+  // 🔹 Verifica padrão de risco e dispara alerta
   async function verificarPadraoDeRisco(trigger: string) {
+    if (!user) return;
     const agora = new Date();
     const inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 0, 0, 0);
     const fim = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 23, 59, 59);
@@ -46,6 +49,7 @@ export default function Registrar() {
     const { data: eventos, error } = await supabase
       .from("urge_events")
       .select("id, trigger, note, intensity, created_at")
+      .eq("user_id", user.id)
       .eq("trigger", trigger)
       .gte("created_at", inicio.toISOString())
       .lte("created_at", fim.toISOString())
@@ -64,10 +68,11 @@ export default function Registrar() {
       return;
     }
 
-    // Busca o plano de prevenção (sem autenticação)
+    // Busca o plano de prevenção do usuário
     const { data: config } = await supabase
       .from("user_config")
       .select("prevention_plan")
+      .eq("user_id", user.id)
       .limit(1)
       .maybeSingle();
 
@@ -79,6 +84,7 @@ export default function Registrar() {
     // Grava alerta no Supabase
     const { error: insertError } = await supabase.from("alerts_log").insert([
       {
+        user_id: user.id,
         trigger,
         intensity: Math.round(media),
         note: notas.join(" | ") || "Desejos intensos repetidos",
@@ -122,6 +128,7 @@ export default function Registrar() {
 
   // 🔹 Salva o registro
   async function handleSalvar() {
+    if (!user) return;
     if (intensidade >= 8 && observacao.trim().length < 15) {
       alert("Por favor, descreva sua observação (mínimo de 15 caracteres).");
       return;
@@ -136,6 +143,7 @@ export default function Registrar() {
     try {
       const { error } = await supabase.from("urge_events").insert([
         {
+          user_id: user.id,
           trigger: gatilhoSelecionado,
           intensity: intensidade,
           note: observacao.trim() || "EMPTY",

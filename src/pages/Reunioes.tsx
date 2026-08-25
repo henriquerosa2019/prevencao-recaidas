@@ -2,15 +2,18 @@ import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/authContext";
 
 const FELLOWSHIPS = ["AA", "NA", "DASA", "Al-Anon", "Grupo de Apoio Online", "Outro"];
 const MEETING_TYPES = [
   "Temática",
   "Depoimento",
   "Estudo de Literatura",
-  "Passos",
-  "Reunião de Negócios",
-  "Festiva",
+  "Estudo dos Passos",
+  "Estudo das Tradições",
+  "Estudo dos Conceitos",
+  "Palestra On Line",
+  "Palestra Presencial",
 ];
 const SERVICES = ["Café", "Recepção", "Leitura de Literatura", "Secretariado"];
 
@@ -32,16 +35,19 @@ export default function Reunioes() {
   const [historico, setHistorico] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    carregarHistorico();
-  }, []);
+    if (user) carregarHistorico();
+  }, [user]);
 
   async function carregarHistorico() {
+    if (!user) return;
     setCarregando(true);
     const { data, error } = await supabase
       .from("meeting_logs")
       .select("*")
+      .eq("user_id", user.id)
       .order("meeting_date", { ascending: false });
     if (error) console.error("Erro ao carregar reuniões:", error);
     else setHistorico(data || []);
@@ -53,10 +59,12 @@ export default function Reunioes() {
   }
 
   async function handleSalvar() {
+    if (!user) return;
     setSalvando(true);
     try {
       const { error } = await supabase.from("meeting_logs").insert([
         {
+          user_id: user.id,
           meeting_date: new Date(meetingDate).toISOString(),
           fellowship,
           group_name: groupName.trim() || null,

@@ -1,6 +1,7 @@
 // src/pages/HistoricoGatilhos.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/authContext";
 
 const DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -42,16 +43,19 @@ export default function HistoricoGatilhos() {
   const [filtroTag, setFiltroTag] = useState("todos");
   const [filtroDia, setFiltroDia] = useState("todos");
   const [filtroIntensidade, setFiltroIntensidade] = useState("todos");
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) fetchData();
+  }, [user]);
 
   async function fetchData() {
+    if (!user) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("urge_events")
       .select("created_at, trigger, intensity, note")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) console.error("Erro ao buscar histórico de gatilhos:", error);
