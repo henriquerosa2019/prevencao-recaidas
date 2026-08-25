@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart } from "lucide-react";
+import { Eye, EyeOff, Heart } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,8 @@ export default function Login() {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [avisoConfirmacao, setAvisoConfirmacao] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -129,27 +131,49 @@ export default function Login() {
 
             <div>
               <label className="block text-sm font-medium mb-1 text-foreground">Senha</label>
-              <input
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                autoComplete={modo === "login" ? "current-password" : "new-password"}
-                placeholder="••••••••"
-                className="w-full rounded-lg border border-border bg-secondary/60 p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <div className="relative">
+                <input
+                  type={mostrarSenha ? "text" : "password"}
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  autoComplete={modo === "login" ? "current-password" : "new-password"}
+                  placeholder="••••••••"
+                  className="w-full rounded-lg border border-border bg-secondary/60 p-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha((v) => !v)}
+                  aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                  className="absolute inset-y-0 right-0 flex items-center px-3"
+                  style={{ color: "var(--aurora-muted-foreground)" }}
+                >
+                  {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {modo === "cadastro" && (
               <div>
                 <label className="block text-sm font-medium mb-1 text-foreground">Confirmar senha</label>
-                <input
-                  type="password"
-                  value={confirmarSenha}
-                  onChange={(e) => setConfirmarSenha(e.target.value)}
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  className="w-full rounded-lg border border-border bg-secondary/60 p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+                <div className="relative">
+                  <input
+                    type={mostrarConfirmarSenha ? "text" : "password"}
+                    value={confirmarSenha}
+                    onChange={(e) => setConfirmarSenha(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    className="w-full rounded-lg border border-border bg-secondary/60 p-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarConfirmarSenha((v) => !v)}
+                    aria-label={mostrarConfirmarSenha ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute inset-y-0 right-0 flex items-center px-3"
+                    style={{ color: "var(--aurora-muted-foreground)" }}
+                  >
+                    {mostrarConfirmarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             )}
 
