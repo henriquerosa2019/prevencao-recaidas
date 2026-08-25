@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 export default function Passos45() {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
+  const [sponsorSuggestions, setSponsorSuggestions] = useState("");
   const [step5Date, setStep5Date] = useState("");
   const [salvando, setSalvando] = useState(false);
 
@@ -39,6 +40,7 @@ export default function Passos45() {
         {
           subject: subject.trim(),
           description: description.trim() || null,
+          sponsor_suggestions: sponsorSuggestions.trim() || null,
           step5_scheduled_at: step5Date || null,
         },
       ]);
@@ -51,6 +53,7 @@ export default function Passos45() {
       });
       setSubject("");
       setDescription("");
+      setSponsorSuggestions("");
       setStep5Date("");
       carregarItens();
     } catch (err: any) {
@@ -114,6 +117,19 @@ export default function Passos45() {
 
         <div>
           <label className="block text-sm font-medium mb-1">
+            Sugestões do Padrinho/Madrinha
+          </label>
+          <textarea
+            rows={3}
+            value={sponsorSuggestions}
+            onChange={(e) => setSponsorSuggestions(e.target.value)}
+            placeholder="O que seu padrinho/madrinha sugeriu sobre esse assunto..."
+            className="w-full rounded-lg border border-border bg-secondary/60 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
             Data prevista para o 5º Passo (opcional)
           </label>
           <input
@@ -162,6 +178,19 @@ export default function Passos45() {
                   </div>
                   {item.description && (
                     <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                  )}
+                  {item.sponsor_suggestions && (
+                    <p
+                      className="text-sm mt-2 rounded-lg p-2"
+                      style={{
+                        backgroundColor: "var(--aurora-secondary)",
+                        border: "1px solid var(--aurora-border)",
+                        color: "var(--aurora-foreground)",
+                      }}
+                    >
+                      <strong style={{ color: "var(--aurora-primary)" }}>💡 Sugestões do Padrinho/Madrinha:</strong>{" "}
+                      {item.sponsor_suggestions}
+                    </p>
                   )}
                   {item.step5_scheduled_at && (
                     <p className="text-xs text-muted-foreground mt-1">

@@ -18,6 +18,7 @@ const STATUS_COLOR: Record<string, React.CSSProperties> = {
 export default function Passos89() {
   const [person, setPerson] = useState("");
   const [harmDescription, setHarmDescription] = useState("");
+  const [sponsorSuggestions, setSponsorSuggestions] = useState("");
   const [reparationType, setReparationType] = useState("");
   const [plannedDate, setPlannedDate] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -52,6 +53,7 @@ export default function Passos89() {
         {
           person: person.trim(),
           harm_description: harmDescription.trim() || null,
+          sponsor_suggestions: sponsorSuggestions.trim() || null,
           reparation_type: reparationType.trim() || null,
           planned_date: plannedDate || null,
         },
@@ -65,6 +67,7 @@ export default function Passos89() {
       });
       setPerson("");
       setHarmDescription("");
+      setSponsorSuggestions("");
       setReparationType("");
       setPlannedDate("");
       carregarItens();
@@ -133,6 +136,17 @@ export default function Passos89() {
           />
         </div>
 
+        <div>
+          <label className="block text-sm font-medium mb-1">Sugestões do Padrinho/Madrinha</label>
+          <textarea
+            rows={3}
+            value={sponsorSuggestions}
+            onChange={(e) => setSponsorSuggestions(e.target.value)}
+            placeholder="O que seu padrinho/madrinha sugeriu sobre essa reparação..."
+            className="w-full rounded-lg border border-border bg-secondary/60 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Tipo de reparação</label>
@@ -189,6 +203,19 @@ export default function Passos89() {
                   </div>
                   {item.harm_description && (
                     <p className="text-sm text-muted-foreground mt-1">{item.harm_description}</p>
+                  )}
+                  {item.sponsor_suggestions && (
+                    <p
+                      className="text-sm mt-2 rounded-lg p-2"
+                      style={{
+                        backgroundColor: "var(--aurora-secondary)",
+                        border: "1px solid var(--aurora-border)",
+                        color: "var(--aurora-foreground)",
+                      }}
+                    >
+                      <strong style={{ color: "var(--aurora-primary)" }}>💡 Sugestões do Padrinho/Madrinha:</strong>{" "}
+                      {item.sponsor_suggestions}
+                    </p>
                   )}
                   {item.reparation_type && (
                     <p className="text-xs text-muted-foreground mt-1">
