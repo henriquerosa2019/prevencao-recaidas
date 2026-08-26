@@ -10,6 +10,7 @@ export default function Config() {
   const [periodo, setPeriodo] = useState("7d");
   const [ativarAlertas, setAtivarAlertas] = useState(true);
   const [plano, setPlano] = useState("");
+  const [nome, setNome] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [padrinhoWhatsapp, setPadrinhoWhatsapp] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -27,7 +28,7 @@ export default function Config() {
         const { data, error } = await supabase
           .from("user_config")
           .select(
-            "default_period, alerts_enabled, prevention_plan, sobriety_start_date, sponsor_whatsapp"
+            "default_period, alerts_enabled, prevention_plan, sobriety_start_date, sponsor_whatsapp, display_name"
           )
           .eq("user_id", user!.id)
           .limit(1)
@@ -41,6 +42,7 @@ export default function Config() {
           setPlano(data.prevention_plan || "");
           setDataInicio(data.sobriety_start_date || "");
           setPadrinhoWhatsapp(data.sponsor_whatsapp || "");
+          setNome(data.display_name || "");
         }
       } catch (err) {
         console.warn("Nenhuma configuração encontrada ainda.");
@@ -135,6 +137,7 @@ export default function Config() {
             prevention_plan: plano.trim(),
             sobriety_start_date: dataInicio || null,
             sponsor_whatsapp: numeroLimpo,
+            display_name: nome.trim() || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existente.id);
@@ -149,6 +152,7 @@ export default function Config() {
             prevention_plan: plano.trim(),
             sobriety_start_date: dataInicio || null,
             sponsor_whatsapp: numeroLimpo,
+            display_name: nome.trim() || null,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -185,6 +189,21 @@ export default function Config() {
             ✍️ Registrar Desejo
           </Button>
         </div>
+
+        {/* 👋 Seu nome — usado na saudação da tela de abertura */}
+        <section className="aurora-glass rounded-lg p-4">
+          <h2 className="text-xl font-display font-bold aurora-text-glow mb-2">👋 Como devo te chamar?</h2>
+          <p className="text-sm text-muted-foreground mb-3">
+            Esse nome aparece na saudação de boas-vindas toda vez que você entra no app.
+          </p>
+          <input
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Ex: Henrique"
+            className="w-full rounded-lg border border-border bg-secondary/60 p-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </section>
 
         {/* Data de início da recuperação */}
         <section className="aurora-glass rounded-lg p-4">

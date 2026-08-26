@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";   // ✅ Importação adicionada
 import { useAuth } from "@/lib/authContext";
 import { marcoDeHoje, dataEfetivaSobriedade, roleLabel } from "@/lib/anniversaryGate";
+import { montarSaudacao, nomeParaSaudacao } from "@/lib/saudacao";
 
 export default function Abertura() {
   const navigate = useNavigate();
@@ -14,6 +15,12 @@ export default function Abertura() {
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [parabens, setParabens] = useState<string[]>([]);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  // 👋 Saudação conforme a hora do dia (veja src/lib/saudacao.ts)
+  const saudacao = montarSaudacao(
+    nomeParaSaudacao(displayName, (user?.user_metadata as any)?.full_name, user?.email)
+  );
 
   // ✅ Mensagens padrão (fallback)
   const mensagensPadrao = [
@@ -81,7 +88,7 @@ export default function Abertura() {
       const [{ data: config }, { data: ultimaRecaida }] = await Promise.all([
         supabase
           .from("user_config")
-          .select("sobriety_start_date")
+          .select("sobriety_start_date, display_name")
           .eq("user_id", user!.id)
           .limit(1)
           .maybeSingle(),
@@ -92,6 +99,8 @@ export default function Abertura() {
           .order("relapse_date", { ascending: false })
           .limit(1),
       ]);
+
+      setDisplayName(config?.display_name || null);
 
       const dataEfetiva = dataEfetivaSobriedade(
         config?.sobriety_start_date || null,
@@ -131,6 +140,19 @@ export default function Abertura() {
             transition={{ duration: 1 }}
             className="max-w-lg flex-1 flex flex-col justify-center"
           >
+            {/* 👋 Boas-vindas conforme a hora do dia */}
+            <div className="mb-8">
+              <h1 className="aurora-font-display aurora-text-glow text-3xl font-bold leading-tight md:text-4xl">
+                {saudacao.titulo}
+              </h1>
+              <p
+                className="mt-3 text-xl font-medium md:text-2xl"
+                style={{ color: "var(--aurora-primary)" }}
+              >
+                {saudacao.subtitulo}
+              </p>
+            </div>
+
             {parabens.length > 0 && (
               <div
                 className="aurora-glass-strong rounded-2xl p-4 mb-6 space-y-2"
@@ -144,7 +166,7 @@ export default function Abertura() {
               </div>
             )}
 
-            <h1 className="text-2xl font-display font-semibold mb-4 aurora-text-glow">Mensagem do Dia</h1>
+            <h2 className="text-xl font-display font-semibold mb-3" style={{ color: "var(--aurora-muted-foreground)" }}>Mensagem do Dia</h2>
             <p className="text-lg italic mb-8" style={{ color: "var(--aurora-foreground)" }}>{mensagem}</p>
 
             <Button

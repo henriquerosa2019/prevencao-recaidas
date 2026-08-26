@@ -15,6 +15,7 @@ export default function Login() {
   const { toast } = useToast();
   const [modo, setModo] = useState<"login" | "cadastro" | "recuperar">("login");
   const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -52,6 +53,7 @@ export default function Login() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password: senha,
+          options: { data: { full_name: nome.trim() || null } },
         });
         if (error) throw error;
 
@@ -196,6 +198,20 @@ export default function Login() {
           </form>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {modo === "cadastro" && (
+              <div>
+                <label className="block text-sm font-medium mb-1 text-foreground">Como devo te chamar?</label>
+                <input
+                  type="text"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  autoComplete="given-name"
+                  placeholder="Seu primeiro nome"
+                  className="w-full rounded-lg border border-border bg-secondary/60 p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-1 text-foreground">E-mail</label>
               <input
